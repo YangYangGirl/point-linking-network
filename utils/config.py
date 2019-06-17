@@ -7,11 +7,11 @@ from pprint import pprint
 
 class Config:
     # data
-    voc_data_dir = '/home/cy/.chainer/dataset/pfnet/chainercv/voc/VOCdevkit/VOC2007/'
+    voc_data_dir = './VOCdevkit/VOC2007/'
     min_size = 600  # image resize
     max_size = 1000 # image resize
-    num_workers = 8
-    test_num_workers = 8
+    num_workers = 1#8
+    test_num_workers = 1#8
 
     # sigma for l1_smooth_loss
     rpn_sigma = 3.
