@@ -12,25 +12,24 @@ pretrained_settings = {
         'imagenet': {
             'url': 'http://data.lip6.fr/cadene/pretrainedmodels/inceptionresnetv2-520b38e4.pth',
             'input_space': 'RGB',
-            'input_size': [3, 299, 299],
+            'input_size': [3, 448, 448],
             'input_range': [0, 1],
             'mean': [0.5, 0.5, 0.5],
             'std': [0.5, 0.5, 0.5],
-            'num_classes': 1000
+            'num_classes': 20
         },
         'imagenet+background': {
             'url': 'http://data.lip6.fr/cadene/pretrainedmodels/inceptionresnetv2-520b38e4.pth',
             'input_space': 'RGB',
-            'input_size': [3, 299, 299],
+            'input_size': [3, 448, 448],
             'input_range': [0, 1],
             'mean': [0.5, 0.5, 0.5],
             'std': [0.5, 0.5, 0.5],
-            'num_classes': 1001
+            'num_classes': 21
         }
     }
+
 }
-
-
 class BasicConv2d(nn.Module):
 
     def __init__(self, in_planes, out_planes, kernel_size, stride, padding=0):
@@ -237,7 +236,7 @@ class InceptionResNetV2(nn.Module):
         super(InceptionResNetV2, self).__init__()
         # Special attributs
         self.input_space = None
-        self.input_size = (299, 299, 3)
+        self.input_size = (448, 448, 3)
         self.mean = None
         self.std = None
         # Modules
@@ -297,9 +296,10 @@ class InceptionResNetV2(nn.Module):
             Block8(scale=0.20)
         )
         self.block8 = Block8(noReLU=True)
-        self.conv2d_7b = BasicConv2d(2080, 1536, kernel_size=1, stride=1)
-        self.avgpool_1a = nn.AvgPool2d(8, count_include_pad=False)
-        self.last_linear = nn.Linear(1536, num_classes)
+        #self.conv2d_7b = BasicConv2d(2080, 1536, kernel_size=1, stride=1)
+        self.conv2d_7b_yy = BasicConv2d(2080, 3328, kernel_size=1, stride=1)
+        self.avgpool_1a = nn.AvgPool2d(14, count_include_pad=False)
+        #self.last_linear = nn.Linear(1536, num_classes)
 
     def features(self, input):
         x = self.conv2d_1a(input)
@@ -341,14 +341,18 @@ def inceptionresnetv2(num_classes=1000, pretrained='imagenet'):
 
         # both 'imagenet'&'imagenet+background' are loaded from same parameters
         model = InceptionResNetV2(num_classes=1001)
-        model.load_state_dict(model_zoo.load_url(settings['url']))
+        model_dict = model.state_dict()
+        pretrained_dict = model_zoo.load_url(settings['url'])
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+        model_dict.update(pretrained_dict)
+        model.load_state_dict(model_dict)
 
-        if pretrained == 'imagenet':
-            new_last_linear = nn.Linear(1536, 1000)
-            new_last_linear.weight.data = model.last_linear.weight.data[1:]
-            new_last_linear.bias.data = model.last_linear.bias.data[1:]
-            model.last_linear = new_last_linear
-
+        #if pretrained == 'imagenet':
+            #new_last_linear = nn.Linear(1536, 1000)
+            #new_last_linear.weight.data = model.last_linear.weight.data[1:]
+            #new_last_linear.bias.data = model.last_linear.bias.data[1:]
+            #model.last_linear = new_last_linear
+        
         model.input_space = settings['input_space']
         model.input_size = settings['input_size']
         model.input_range = settings['input_range']
@@ -368,13 +372,14 @@ python -m pretrainedmodels.inceptionresnetv2
 ```
 '''
 if __name__ == '__main__':
-
-    assert inceptionresnetv2(num_classes=10, pretrained=None)
+    
+    assert inceptionresnetv2(num_classes=20, pretrained=None)
+    #print(inceptionresnetv2(num_classes=20, pretrained=None))
     print('success')
-    assert inceptionresnetv2(num_classes=1000, pretrained='imagenet')
+    assert inceptionresnetv2(num_classes=20, pretrained='imagenet')
     print('success')
-    assert inceptionresnetv2(num_classes=1001, pretrained='imagenet+background')
+    assert inceptionresnetv2(num_classes=21, pretrained='imagenet+background')
     print('success')
 
     # fail
-    assert inceptionresnetv2(num_classes=1001, pretrained='imagenet')
+    assert inceptionresnetv2(num_classes=20, pretrained='imagenet')
