@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from utils.config import opt
 from data.dataset import Dataset, TestDataset, inverse_normalize
-from model.point_linking import Point_Linking
+from model.point_linking_inceptionresnetv2 import PointLinkInception
+
 from torch.utils import data as data_
 from traineryy import PointLinkTrainer
 from utils import array_tool as at
@@ -63,7 +64,7 @@ def train(**kwargs):
                                        shuffle=False, \
                                        pin_memory=True
                                        )
-    point_link = PointLinkTrainer()
+    point_link = PointLinkInception()
     print('model construct completed')
     trainer = PointLinkTrainer(point_link).cuda()
     if opt.load_path:
