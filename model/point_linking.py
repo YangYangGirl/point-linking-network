@@ -122,6 +122,7 @@ class Point_Linking(nn.Module):
         for img, size in zip(prepared_imgs, sizes):
             four_out = self(img)
             for i in range(4):
+                m = 
                 four_out[i][:, :, 0: 1]
                 four_out[i][:, :, 1: 21]
                 four_out[i][:, :, 21: 23]
@@ -139,7 +140,7 @@ class Point_Linking(nn.Module):
             	s_ = r//14//14%14
             	t_ = r//14//14//14%14
             	c_ = r//14//14//14//21%21
-                
+
             existencess.append(existences)
             scoress.append(scores)
             xy_positionss.append(xy_positions)
