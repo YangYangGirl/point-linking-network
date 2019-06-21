@@ -69,11 +69,10 @@ class Fourbranch(nn.Module):
 
 class Point_Linking(nn.Module):
     
-    def __init__(self, inception_V2, dilation, inference):
+    def __init__(self, inception_V2):
         super(Point_Linking, self).__init__()
         self.inception_V2 = inception_V2
         self.fourbranch = Fourbranch()
-        self.inference = inference
         
         self.grid_size = 14
         self.classes = 20
@@ -154,14 +153,7 @@ class Point_Linking(nn.Module):
         self.use_preset('evaluate')
         self.train()
         return bboxes, labels, scores
-    
-    '''def inference(self, link_mnst):
-        m_ = r%14
-        n_ = r\14%14
-        s_ = r\14\14%14
-        t_ = r\14\14\14%14
-        c_ = r\14\14\14\21%21
-    '''
+
     def use_preset(self, preset):
         """Use the given preset during prediction.
         This method changes values of :obj:`self.nms_thresh` and

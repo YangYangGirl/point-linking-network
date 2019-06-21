@@ -232,7 +232,7 @@ class Block8(nn.Module):
 
 class InceptionResNetV2(nn.Module):
 
-    def __init__(self, num_classes=1001):
+    def __init__(self, num_classes=20):
         super(InceptionResNetV2, self).__init__()
         # Special attributs
         self.input_space = None
@@ -299,6 +299,9 @@ class InceptionResNetV2(nn.Module):
         #self.conv2d_7b = BasicConv2d(2080, 1536, kernel_size=1, stride=1)
         self.conv2d_7b_yy = BasicConv2d(2080, 3328, kernel_size=1, stride=1)
         self.avgpool_1a = nn.AvgPool2d(14, count_include_pad=False)
+        self.conv1 = BasicConv2d(3328, 1536, kernel_size=1, stride=1)
+        self.conv2 = BasicConv2d(1536, 1536, kernel_size=3, stride=1)
+        self.conv3 = BasicConv2d(1536, 1536, kernel_size=3, stride=1)
         #self.last_linear = nn.Linear(1536, num_classes)
 
     def features(self, input):
@@ -316,7 +319,12 @@ class InceptionResNetV2(nn.Module):
         x = self.mixed_7a(x)
         x = self.repeat_2(x)
         x = self.block8(x)
-        x = self.conv2d_7b(x)
+        x = self.conv2d_7b_yy(x)
+        x = self.avgpool_1a(x)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+
         return x
 
     def logits(self, features):
