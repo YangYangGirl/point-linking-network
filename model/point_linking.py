@@ -75,16 +75,17 @@ class Point_Linking(nn.Module):
         self.fourbranch = Fourbranch()
         self.inference = inference
         
-        self.grid_size = 0
-    
+        self.grid_size = 14
+        self.classes = 20
+
     def compute_grid_offsets(self, grid_size, cuda=True):
         self.grid_size = grid_size
         g = self.grid_size
-        FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        FloatTensor = t.cuda.FloatTensor if cuda else torch.FloatTensor
         self.stride = self.img_dim / self.grid_size
         # Calculate offsets for each grid
-        self.grid_x = torch.arange(g).repeat(g, 1).view([1, 1, g, g]).type(FloatTensor)
-        self.grid_y = torch.arange(g).repeat(g, 1).t().view([1, 1, g, g]).type(FloatTensor)
+        self.grid_x = t.arange(g).repeat(g, 1).view([1, 1, g, g]).type(FloatTensor)
+        self.grid_y = t.arange(g).repeat(g, 1).t().view([1, 1, g, g]).type(FloatTensor)
         
     def n_class(self):
         # Total number of classes including the background.
@@ -92,12 +93,13 @@ class Point_Linking(nn.Module):
 
     def forward(self, x, scale=1.):
         img_size = x.shape[2:]
-        self.grid_size  = x.size(3)
+        grid_size  = x.size(3)
         f = self.inception_V2(x)
         four_out = self.fourbranch(f)
         if grid_size != self.grid_size:
             self.compute_grid_offsets(grid_size, cuda=x.is_cuda) 
         return four_out
+
     def predict(self, imgs, size=None, visualize=False):
         self.eval()
         if visualize:
@@ -118,24 +120,26 @@ class Point_Linking(nn.Module):
         linkss = list() 
         link_mnst = list()
         for img, size in zip(prepared_imgs, sizes):
-            four_out = self(img, scale=scale)
+            four_out = self(img)
             for i in range(4):
                 four_out[i][:, :, 0: 1]
                 four_out[i][:, :, 1: 21]
                 four_out[i][:, :, 21: 23]
                 four_out[i][:, :, 23: 37]
                 four_out[i][:, :, 37: 51]
-                for t in range(14):
-                    for s in range(14):
-                        for n in range(14):
-                            for m in range(14):
+                for t in range(self.grid_size):
+                    for s in range(self.grid_size):
+                        for n in range(self.grid_size):
+                            for m in range(self.grid_size):
+                                for c in range(self.classes):
                                 link_mnst[c*14*14*14*21+t*14*14*14+s*14*14+n*14+m] = p_mn*p_st*q_cmn*q_cst*(l_mn_s*l_mn_t+l_st_m*l_st_n)/2
             	r = t.argmax(link_mnst)
             	m_ = r%14
-            	n_ = r\14%14
-            	s_ = r\14\14%14
-            	t_ = r\14\14\14%14
-            	c_ = r\14\14\14\21%21
+            	n_ = r//14%14
+            	s_ = r//14//14%14
+            	t_ = r//14//14//14%14
+            	c_ = r//14//14//14//21%21
+                
             existencess.append(existences)
             scoress.append(scores)
             xy_positionss.append(xy_positions)

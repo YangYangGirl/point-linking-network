@@ -1,17 +1,21 @@
 from __future__ import  absolute_import
+# though cupy is not used but without this line, it raise errors...
+import cupy as cp
 import os
-from collections import namedtuple
-import time
-from torch.nn import functional as F
-from model.utils.creator_tool import AnchorTargetCreator, ProposalTargetCreator
 
-from torch import nn
-import torch as t
-from utils import array_tool as at
-from utils.vis_tool import Visualizer
+import ipdb
+import matplotlib
+from tqdm import tqdm
 
 from utils.config import opt
-from torchnet.meter import ConfusionMeter, AverageValueMeter
+from data.dataset import Dataset, TestDataset, inverse_normalize
+from model import FasterRCNNVGG16
+from torch.utils import data as data_
+from trainer import FasterRCNNTrainer
+from utils import array_tool as at
+from utils.vis_tool import visdom_bbox
+from utils.eval_tool import eval_detection_voc
+
 
 LossTuple = namedtuple('LossTuple',
                        ['rpn_loc_loss',
@@ -28,7 +32,6 @@ class FasterRCNNTrainer(nn.Module):
     The losses include:
 
     * :obj:`rpn_loc_loss`: The localization loss for \
-        Region Proposal Network (RPN).
     * :obj:`rpn_cls_loss`: The classification loss for RPN.
     * :obj:`roi_loc_loss`: The localization loss for the head module.
     * :obj:`roi_cls_loss`: The classification loss for the head module.

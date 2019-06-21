@@ -420,7 +420,6 @@ class ProposalCreator:
         # Take after_nms_topN (e.g. 300).
 
         # unNOTE: somthing is wrong here!
-        # TODO: remove cuda.to_gpu
         keep = non_maximum_suppression(
             cp.ascontiguousarray(cp.asarray(roi)),
             thresh=self.nms_thresh)
