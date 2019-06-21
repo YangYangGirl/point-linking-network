@@ -119,7 +119,7 @@ class Point_Linking(nn.Module):
         else:
              prepared_imgs = imgs
 
-        link_mnst = list()
+        link_mnst = t.zeros(self.grid_size**4*self.classes)
         for img, size in zip(prepared_imgs, sizes):
             four_out = self(img)
             for i in range(self.B):
@@ -140,12 +140,12 @@ class Point_Linking(nn.Module):
                                     l_ab_n = out_c[a, b, 37+n]
                                     link_mnst[c*14*14*14*21+b*14*14*14+a*14*14+n*14+m] = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
 
-            	r = t.argmax(link_mnst)
-            	m_ = r%14
-            	n_ = r//14%14
-            	s_ = r//14//14%14
-            	t_ = r//14//14//14%14
-            	c_ = r//14//14//14//21%21
+                r = t.argmax(link_mnst)
+                m_ = r%14
+                n_ = r//14%14
+                s_ = r//14//14%14
+                t_ = r//14//14//14%14
+                c_ = r//14//14//14//21%21
                 bbox = [m_, n_, 2*(m_ - s_), 2*(t_ - n_)]
                 bboxes.append(bbox)
                 labels.append(c_)

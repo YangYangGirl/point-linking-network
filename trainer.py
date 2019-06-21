@@ -1,21 +1,17 @@
 from __future__ import  absolute_import
-# though cupy is not used but without this line, it raise errors...
-import cupy as cp
 import os
+from collections import namedtuple
+import time
+from torch.nn import functional as F
+from model.utils.creator_tool import AnchorTargetCreator, ProposalTargetCreator
 
-import ipdb
-import matplotlib
-from tqdm import tqdm
+from torch import nn
+import torch as t
+from utils import array_tool as at
+from utils.vis_tool import Visualizer
 
 from utils.config import opt
-from data.dataset import Dataset, TestDataset, inverse_normalize
-from model import FasterRCNNVGG16
-from torch.utils import data as data_
-from trainer import FasterRCNNTrainer
-from utils import array_tool as at
-from utils.vis_tool import visdom_bbox
-from utils.eval_tool import eval_detection_voc
-
+from torchnet.meter import ConfusionMeter, AverageValueMeter
 
 LossTuple = namedtuple('LossTuple',
                        ['rpn_loc_loss',
@@ -28,15 +24,13 @@ LossTuple = namedtuple('LossTuple',
 
 class FasterRCNNTrainer(nn.Module):
     """wrapper for conveniently training. return losses
-
     The losses include:
-
     * :obj:`rpn_loc_loss`: The localization loss for \
+        Region Proposal Network (RPN).
     * :obj:`rpn_cls_loss`: The classification loss for RPN.
     * :obj:`roi_loc_loss`: The localization loss for the head module.
     * :obj:`roi_cls_loss`: The classification loss for the head module.
     * :obj:`total_loss`: The sum of 4 loss above.
-
     Args:
         faster_rcnn (model.FasterRCNN):
             A Faster R-CNN model that is going to be trained.
@@ -67,14 +61,10 @@ class FasterRCNNTrainer(nn.Module):
 
     def forward(self, imgs, bboxes, labels, scale):
         """Forward Faster R-CNN and calculate losses.
-
         Here are notations used.
-
         * :math:`N` is the batch size.
         * :math:`R` is the number of bounding boxes per image.
-
         Currently, only :math:`N=1` is supported.
-
         Args:
             imgs (~torch.autograd.Variable): A variable with a batch of images.
             bboxes (~torch.autograd.Variable): A batch of bounding boxes.
@@ -86,7 +76,6 @@ class FasterRCNNTrainer(nn.Module):
                 classes.
             scale (float): Amount of scaling applied to
                 the raw image during preprocessing.
-
         Returns:
             namedtuple of 5 losses
         """
@@ -178,7 +167,6 @@ class FasterRCNNTrainer(nn.Module):
     def save(self, save_optimizer=False, save_path=None, **kwargs):
         """serialize models include optimizer and other info
         return path where the model-file is stored.
-
         Args:
             save_optimizer (bool): whether save optimizer.state_dict().
             save_path (string): where to save model, if it's None, save_path
@@ -259,3 +247,4 @@ def _fast_rcnn_loc_loss(pred_loc, gt_loc, gt_label, sigma):
     # Normalize by total number of negtive and positive rois.
     loc_loss /= ((gt_label >= 0).sum().float()) # ignore gt_label==-1 for rpn_loss
     return loc_loss
+
