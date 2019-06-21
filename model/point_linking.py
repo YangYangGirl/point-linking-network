@@ -122,7 +122,7 @@ class Point_Linking(nn.Module):
         for img, size in zip(prepared_imgs, sizes):
             four_out = self(img)
             for i in range(4):
-                m = 
+                m =
                 four_out[i][:, :, 0: 1]
                 four_out[i][:, :, 1: 21]
                 four_out[i][:, :, 21: 23]
