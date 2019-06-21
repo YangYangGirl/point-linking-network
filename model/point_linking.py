@@ -125,20 +125,21 @@ class Point_Linking(nn.Module):
             for i in range(self.B):
                 out_p = four_out[i].reshape([self.grid_size,self.grid_size, 2*self.B, 51])
                 out_c = four_out[self.B+i].reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
-                for t in range(self.grid_size):
-                    for s in range(self.grid_size):
+                for b in range(self.grid_size):
+                    for a in range(self.grid_size):
                         for n in range(self.grid_size):
                             for m in range(self.grid_size):
                                 for c in range(self.classes):
                                     p_mn = out_p[m, n, 0: 1]
-                                    p_st = out_c[s, t, 0: 1]
+                                    p_ab = out_c[a, b, 0: 1]
                                     q_cmn = out_p[m, n, 1: 1+c]
-                                    q_cst = out_c[s, t, 1: 1+c]
-                                    l_mn_s = out_p[m, n, 23+s]
-                                    l_mn_t = out_c[m, n, 37+t]
-                                    l_st_m = out_p[s, t, 23+n]
-                                    l_st_n = out_c[s, t, 37+n]
-                                    link_mnst[c*14*14*14*21+t*14*14*14+s*14*14+n*14+m] = p_mn*p_st*q_cmn*q_cst*(l_mn_s*l_mn_t+l_st_m*l_st_n)/2
+                                    q_cab = out_c[a, b, 1: 1+c]
+                                    l_mn_a = out_p[m, n, 23+a]
+                                    l_mn_b = out_c[m, n, 37+b]
+                                    l_ab_m = out_p[a, b, 23+n]
+                                    l_ab_n = out_c[a, b, 37+n]
+                                    link_mnst[c*14*14*14*21+b*14*14*14+a*14*14+n*14+m] = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
+
             	r = t.argmax(link_mnst)
             	m_ = r%14
             	n_ = r//14%14
