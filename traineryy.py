@@ -102,111 +102,83 @@ class PointLinkTrainer(nn.Module):
         self.w_link = 1
         self.total_loss = 0
 
+    def compute_loss(self, out_four, bboxes, labels, H, W):
+        """
+
+        Args:
+            out_four:
+            bboxes:
+            labels:
+            H:
+            W:
+
+        Returns: losses of four branches
+
+        """
+        loss = list()
+        gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = \
+            gt_convert(bboxes, labels, H, W, self.grid_size)
+
+        for direction in range(4):
+            total_loss = 0
+            out = out_four[direction].reshape([14, 14, 2 * self.B, 51])
+            for i_x in range(14):
+                for i_y in range(14):
+                    for j in range(2 * self.B):
+                        if j < self.B:
+                            if (i_x, i_y) in gt_ps:
+                                which = gt_ps.index((i_x, i_y))
+                                x_ij, y_ij = gt_ps_d[which]
+                                loss1 = (out[i_x, i_y, j, 0] - 1) ** 2
+                                loss2 = self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
+                                                                     gt_labels[int(which / 4)])
+                                loss3 = self.w_coord * self.mse_loss(
+                                    out[i_x, i_y, j, 1 + self.classes: 3 + self.classes], gt_ps_d[which])
+                                loss4 = self.w_link * self.mse_loss(
+                                    out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size],
+                                    gt_linkcs_x[which // 4]) + \
+                                        self.mse_loss(out[
+                                                      3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
+                                                      gt_linkcs_y[which // 4])
+
+                                loss_pt = loss1 + loss2 + loss3 + loss4
+                                total_loss += loss_pt
+                            else:
+                                loss_nopt = out[i_x, i_y, j, 0] ** 2
+                                total_loss += loss_pt
+                        if j >= self.B:
+                            if (i_x, i_y) in gt_ps:
+                                which = gt_ps.index((i_x, i_y))
+                                x_ij, y_ij = gt_cs_d[which]
+                                loss1 = (out[i_x, i_y, j, 0] - 1) ** 2
+                                loss2 = self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
+                                                                     gt_labels[which])
+                                loss3 = self.w_coord * self.mse_loss(
+                                    out[i_x, i_y, j, 1 + self.classes: 3 + self.classes] - gt_cs_d[which])
+                                loss4 = self.w_link * self.mse_loss(
+                                    out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size],
+                                    gt_linkps_x[which][direction]) + \
+                                        self.mse_loss(out[
+                                                      3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
+                                                      gt_linkps_y[which][direction])
+
+                                loss_pt = loss1 + loss2 + loss3 + loss4
+                                total_loss += loss_pt
+                            else:
+                                loss_nopt = out[i_x, i_y, j, 0] ** 2
+                                total_loss += loss_pt
+            loss[direction] = total_loss
+        return loss
+
+
     def forward(self, imgs, bboxes, labels, direction):
         _, _, H, W = imgs.shape
         img_size = (H, W)
-        out = self.point_link(imgs)
-        out.reshape([14, 14, 2*self.B , 51])
+        out_four = self.point_link(imgs)
 
-        gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y =\
-            gt_convert(bboxes, labels, H, W, self.grid_size)
+        loss = self.compute_loss(out_four, bboxes, labels, H, W)
 
-        for i_x in range(14):
-            for i_y in range(14):
-                for j in range(2  * self.B):
-                    if j < self.B:
-                        if (i_x,i_y) in gt_ps:
-                            which = gt_ps.index((i_x, i_y))
-                            x_ij, y_ij = gt_ps_d[which]
-                            loss1 = (out[i_x, i_y, j, 0] - 1)**2
-                            loss2 = self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes], gt_labels[int(which/4)])
-                            loss3 = self.w_coord * self.mse_loss(out[i_x, i_y, j, 1 + self.classes : 3 + self.classes], gt_ps_d[which])
-                            loss4 = self.w_link * self.mse_loss(out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size], gt_linkcs_x[which//4]) +\
-                            self.mse_loss(out[3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size], gt_linkcs_y[which//4])
-
-                            loss_pt = loss1 + loss2 + loss3 + loss4
-                            self.total_loss += loss_pt
-                        else:
-                            loss_nopt = out[i_x, i_y, j, 0]**2
-                            self.total_loss += loss_pt
-                    if j >= self.B:
-                        if (i_x,i_y) in gt_ps:
-                            which = gt_ps.index((i_x, i_y))
-                            x_ij, y_ij = gt_cs_d[which]
-                            loss1 = (out[i_x, i_y, j, 0] - 1)**2
-                            loss2 = self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes], gt_labels[which])
-                            loss3 = self.w_coord * self.mse_loss(out[i_x, i_y, j, 1 + self.classes : 3 + self.classes] - gt_cs_d[which])
-                            loss4 = self.w_link * self.mse_loss(out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size], gt_linkps_x[which][direction]) +\
-                            self.mse_loss(out[3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size], gt_linkps_y[which][direction])
-
-                            loss_pt = loss1 + loss2 + loss3 + loss4
-                            self.total_loss += loss_pt
-                        else:
-                            loss_nopt = out[i_x, i_y, j, 0]**2
-                            self.total_loss += loss_pt
-
-        return self.total_loss
-
-        '''gt = t.zeros([14, 14, 204])
-
-        for which, b in enumerate(bboxes):
-            # pij
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 0] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int(b[1] / H * self.grid_size), 0] = 1
-            gt[int(b[0] / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 0] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 0] = 1
-
-            gt[int((b[0] + b[2]/2) / W * self.grid_size), int((b[1] + b[3]/2) / H * self.grid_size), 52 + 0] = 1
-
-            # qij
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 1 + labels[which]] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int(b[1] / H * self.grid_size), 1 + labels[which]] = 1
-            gt[int(b[0] / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 1 + labels[which]] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 1 + labels[which]] = 1
-+
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 1 + labels[which]] = 1
-
-            # xij， yij
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 21] = b[0] / W * self.grid_size - int(
-                b[0] / W * self.grid_size)
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 22] = b[1] / H * self.grid_size - int(
-                b[1] / H * self.grid_size)
-            gt[int(b[0] / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 21] = b[0] / W * self.grid_size - int(
-                b[0] / W * self.grid_size)
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 22] = b[1] / H * self.grid_size - int(
-                b[1] / H * self.grid_size)
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 21] = b[0] / W * self.grid_size - int(
-                b[0] / W * self.grid_size)
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 22] = b[1] / H * self.grid_size - int(
-                b[1] / H * self.grid_size)
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 21] = b[0] / W * self.grid_size - int(
-                b[0] / W * self.grid_size)
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 22] = b[1] / H * self.grid_size - int(
-                b[1] / H * self.grid_size)
-
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 21] = (b[0] + b[2] / 2) / W * self.grid_size - int((b[0] + b[2] / 2) / W * self.grid_size)
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 22] = (b[1] + b[3] / 2) / H * self.grid_size - int((b[1] + b[3] / 2) / H * self.grid_size)
-
-            # l_x_ij,l_y_ij
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 23 + int(b[0] / W * self.grid_size)] = 1
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 37 + int(b[1] / H * self.grid_size)] = 1
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 23 + int((b[0] + b[2]) / W * self.grid_size)] = 1
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 37 +int(b[1] / H * self.grid_size)] = 1
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 23 + int(b[0] / W * self.grid_size)] = 1
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 37 + int(b[1] / H * self.grid_size)] = 1
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 23 + int((b[0] + b[2]) / W * self.grid_size)] = 1
-            gt[int((b[0] + b[2] / 2) / W * self.grid_size), int((b[1] + b[3] / 2) / H * self.grid_size), 52 + 37 + int((b[1] + b[3]) / H * self.grid_size)] = 1
-
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 23 + int((b[0] + b[2] / 2) / W * self.grid_size)] = 1
-            gt[int(b[0] / W * self.grid_size), int(b[1] / H * self.grid_size), 37 + int((b[1] + b[3] / 2) / H * self.grid_size)] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int(b[1] / H * self.grid_size), 23 + int((b[0] + b[2] / 2) / W * self.grid_size)] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int(b[1] / H * self.grid_size), 37 + int((b[1] + b[3] / 2) / H * self.grid_size)] = 1
-            gt[int(b[0] / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 23 + int((b[0] + b[2] / 2) / W * self.grid_size)] = 1
-            gt[int(b[0] / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 37 + int((b[1] + b[3] / 2) / H * self.grid_size)] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 23 + int((b[0] + b[2] / 2) / W * self.grid_size)] = 1
-            gt[int((b[0] + b[2]) / W * self.grid_size), int((b[1] + b[3]) / H * self.grid_size), 37 + int((b[1] + b[3] / 2) / H * self.grid_size)] = 1
-        '''
-
+        return loss
 
     def train_step(self, imgs, bboxes, labels, direction):
         self.optimizer.zero_grad()

@@ -9,9 +9,9 @@ from tqdm import tqdm
 
 from utils.config import opt
 from data.dataset import Dataset, TestDataset, inverse_normalize
-from model import
+from model.point_linking import Point_Linking
 from torch.utils import data as data_
-from trainer import FasterRCNNTrainer
+from traineryy import PointLinkTrainer
 from utils import array_tool as at
 from utils.vis_tool import visdom_bbox
 from utils.eval_tool import eval_detection_voc
@@ -63,9 +63,9 @@ def train(**kwargs):
                                        shuffle=False, \
                                        pin_memory=True
                                        )
-    faster_rcnn = ()
+    point_link = PointLinkTrainer()
     print('model construct completed')
-    trainer = FasterRCNNTrainer(faster_rcnn).cuda()
+    trainer = PointLinkTrainer(point_link).cuda()
     if opt.load_path:
         trainer.load(opt.load_path)
         print('load pretrained model from %s' % opt.load_path)
@@ -94,7 +94,7 @@ def train(**kwargs):
                 trainer.vis.img('gt_img', gt_img)
 
                 # plot predicti bboxes
-                _bboxes, _labels, _scores = trainer.faster_rcnn.predict([ori_img_], visualize=True)
+                _bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
                 pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),
                                        at.tonumpy(_labels[0]).reshape(-1),
@@ -105,7 +105,7 @@ def train(**kwargs):
                 trainer.vis.text(str(trainer.rpn_cm.value().tolist()), win='rpn_cm')
                 # roi confusion matrix
                 trainer.vis.img('roi_cm', at.totensor(trainer.roi_cm.conf, False).float())
-        eval_result = eval(test_dataloader, faster_rcnn, test_num=opt.test_num)
+        eval_result = eval(test_dataloader, point_link, test_num=opt.test_num)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),

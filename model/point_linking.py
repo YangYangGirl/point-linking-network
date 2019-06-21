@@ -37,35 +37,35 @@ class Fourbranch(nn.Module):
         super(Fourbranch, self).__init__()
 
         self.branch0 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1)
-            BasicConv2d(1536, 204, kernel_size=3, stride=1)
-            nn.Conv2d(in_channels, out_channels, 3, stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
-       )
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1),
+            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+        )
  
         self.branch1 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1)
-            BasicConv2d(1536, 204, kernel_size=3, stride=1)
-            nn.Conv2d(in_channels, out_channels, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
-       )
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1),
+            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+        )
 
         self.branch2 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1)
-            BasicConv2d(1536, 204, kernel_size=3, stride=1)
-            nn.Conv2d(in_channels, out_channels, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
-       )
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1),
+            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+        )
 
         self.branch3 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1)
-            BasicConv2d(1536, 204, kernel_size=3, stride=1)
-            nn.Conv2d(in_channels, out_channels, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
-       )
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1),
+            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+        )
 
     def forward(self, x):
         x0 = self.branch0(x)
         x1 = self.branch1(x)
         x2 = self.branch2(x)
         x3 = self.branch3(x)
-        return torch.stack([x0, x1, x2, x3], 1)
+        return t.stack([x0, x1, x2, x3], 1)
 
 class Point_Linking(nn.Module):
     
@@ -77,11 +77,12 @@ class Point_Linking(nn.Module):
         
         self.grid_size = 14
         self.classes = 20
+        self.B =2
 
     def compute_grid_offsets(self, grid_size, cuda=True):
         self.grid_size = grid_size
         g = self.grid_size
-        FloatTensor = t.cuda.FloatTensor if cuda else torch.FloatTensor
+        FloatTensor = t.cuda.FloatTensor if cuda else t.FloatTensor
         self.stride = self.img_dim / self.grid_size
         # Calculate offsets for each grid
         self.grid_x = t.arange(g).repeat(g, 1).view([1, 1, g, g]).type(FloatTensor)
@@ -101,6 +102,10 @@ class Point_Linking(nn.Module):
         return four_out
 
     def predict(self, imgs, size=None, visualize=False):
+        bboxes = list()
+        labels = list()
+        scores = list()
+
         self.eval()
         if visualize:
             self.use_preset('visualize')
@@ -113,41 +118,41 @@ class Point_Linking(nn.Module):
                 sizes.append(size)
         else:
              prepared_imgs = imgs
-        existencess = list()
-        #labels = list()
-        scoress = list()        
-        xy_positionss = list()
-        linkss = list() 
+
         link_mnst = list()
         for img, size in zip(prepared_imgs, sizes):
             four_out = self(img)
-            for i in range(4):
-                m =
-                four_out[i][:, :, 0: 1]
-                four_out[i][:, :, 1: 21]
-                four_out[i][:, :, 21: 23]
-                four_out[i][:, :, 23: 37]
-                four_out[i][:, :, 37: 51]
+            for i in range(self.B):
+                out_p = four_out[i].reshape([self.grid_size,self.grid_size, 2*self.B, 51])
+                out_c = four_out[self.B+i].reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
                 for t in range(self.grid_size):
                     for s in range(self.grid_size):
                         for n in range(self.grid_size):
                             for m in range(self.grid_size):
                                 for c in range(self.classes):
-                                link_mnst[c*14*14*14*21+t*14*14*14+s*14*14+n*14+m] = p_mn*p_st*q_cmn*q_cst*(l_mn_s*l_mn_t+l_st_m*l_st_n)/2
+                                    p_mn = out_p[m, n, 0: 1]
+                                    p_st = out_c[s, t, 0: 1]
+                                    q_cmn = out_p[m, n, 1: 1+c]
+                                    q_cst = out_c[s, t, 1: 1+c]
+                                    l_mn_s = out_p[m, n, 23+s]
+                                    l_mn_t = out_c[m, n, 37+t]
+                                    l_st_m = out_p[s, t, 23+n]
+                                    l_st_n = out_c[s, t, 37+n]
+                                    link_mnst[c*14*14*14*21+t*14*14*14+s*14*14+n*14+m] = p_mn*p_st*q_cmn*q_cst*(l_mn_s*l_mn_t+l_st_m*l_st_n)/2
             	r = t.argmax(link_mnst)
             	m_ = r%14
             	n_ = r//14%14
             	s_ = r//14//14%14
             	t_ = r//14//14//14%14
             	c_ = r//14//14//14//21%21
+                bbox = [m_, n_, 2*(m_ - s_), 2*(t_ - n_)]
+                bboxes.append(bbox)
+                labels.append(c_)
+                scores.append(r)
 
-            existencess.append(existences)
-            scoress.append(scores)
-            xy_positionss.append(xy_positions)
-            linkss.append(links)
-       self.use_preset('evaluate')
-       self.train()
-       return existencess, scoress, xy_positionss, linkss
+        self.use_preset('evaluate')
+        self.train()
+        return bboxes, labels, scores
     
     '''def inference(self, link_mnst):
         m_ = r%14
