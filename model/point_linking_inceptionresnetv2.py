@@ -10,6 +10,7 @@ from utils.config import opt
 
 def pretrained_inception():
     if opt.caffe_pretrain:
+        print("train pretrained")
         model = InceptionResNetV2()
         if not opt.load_path:
             model_dict = model.state_dict()
@@ -18,6 +19,7 @@ def pretrained_inception():
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
     else:
+        print("train raw")
         model = InceptionResNetV2() 
     return model
 

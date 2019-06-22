@@ -37,34 +37,36 @@ class Fourbranch(nn.Module):
         super(Fourbranch, self).__init__()
 
         self.branch0 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
-            BasicConv2d(1536, 204, kernel_size=3, stride=1),
-            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
-        )
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(204, 204, [3, 3, 3, 3, 3, 3, 3], stride=[1, 1, 1, 1, 1, 1, 1], padding=[2, 2, 4, 8, 16, 1, 1], dilation=[2, 2, 4, 8, 16, 1, 1], bias=True)
+       ) 
  
         self.branch1 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
-            BasicConv2d(1536, 204, kernel_size=3, stride=1),
-            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
+            #nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
         )
 
         self.branch2 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
-            BasicConv2d(1536, 204, kernel_size=3, stride=1),
-            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
+            #nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
         )
 
         self.branch3 = nn.Sequential(
-            BasicConv2d(1536, 1536, kernel_size=3, stride=1),
-            BasicConv2d(1536, 204, kernel_size=3, stride=1),
-            nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+            BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
+            BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
+            #nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
         )
 
     def forward(self, x):
+        print("x:"+str(x.shape))
         x0 = self.branch0(x)
         x1 = self.branch1(x)
         x2 = self.branch2(x)
         x3 = self.branch3(x)
+        print("x3"+str(x3.shape))
         return t.stack([x0, x1, x2, x3], 1)
 
 class Point_Linking(nn.Module):

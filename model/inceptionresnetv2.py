@@ -297,11 +297,11 @@ class InceptionResNetV2(nn.Module):
         )
         self.block8 = Block8(noReLU=True)
         #self.conv2d_7b = BasicConv2d(2080, 1536, kernel_size=1, stride=1)
-        self.conv2d_7b_yy = BasicConv2d(2080, 3328, kernel_size=1, stride=1)
+        self.conv2d_7b_yy = BasicConv2d(2080, 3328, kernel_size=1, stride=1, padding=1)
         self.avgpool_1a = nn.AvgPool2d(1, count_include_pad=False)
         self.conv1 = BasicConv2d(3328, 1536, kernel_size=1, stride=1)
-        self.conv2 = BasicConv2d(1536, 1536, kernel_size=3, stride=1)
-        self.conv3 = BasicConv2d(1536, 1536, kernel_size=3, stride=1)
+        self.conv2 = BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1)
+        self.conv3 = BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1)
         #self.last_linear = nn.Linear(1536, num_classes)
 
     def features(self, input):
@@ -327,20 +327,23 @@ class InceptionResNetV2(nn.Module):
         x = self.avgpool_1a(x)
         print("avgpool_1a"+str(x.shape))
         x = self.conv1(x)
+        print("conv1"+str(x.shape))
         x = self.conv2(x)
+        print("conv2"+str(x.shape))
         x = self.conv3(x)
+        print("conv3"+str(x.shape))        
 
         return x
 
-    def logits(self, features):
+    '''def logits(self, features):
         x = self.avgpool_1a(features)
         x = x.view(x.size(0), -1)
         x = self.last_linear(x)
         return x
-
+    '''
     def forward(self, input):
         x = self.features(input)
-        x = self.logits(x)
+        #x = self.logits(x)
         return x
 
 def inceptionresnetv2(num_classes=1000, pretrained='imagenet'):
