@@ -103,6 +103,7 @@ class Point_Linking(nn.Module):
         self.grid_size = 14
         self.classes = 20
         self.B =2
+        self.img_dim = 448
 
     def compute_grid_offsets(self, grid_size, cuda=True):
         self.grid_size = grid_size

@@ -26,48 +26,52 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
     gt_linkcs_y = list()
     gt_linkps_x = list()
     gt_linkps_y = list()
-
+    
+    print("W" + str(W))
     bboxes = bboxes / W * grid_size
-
-
+    print(bboxes)
+    print(type(bboxes))
+    bboxes = bboxes[0]
+    print(bboxes.shape)
     for which, b in enumerate(bboxes):
+        #b = b.squeeze()
         x0 = int(b[0])
         y0 = int(b[1])
-        x0_d = b[0] - int(b[0])
-        y0_d = b[1] - int(b[1])
+        x0_d = b[0] - x0
+        y0_d = b[1] - y0
 
-        x1 = int((b[0] + b[2]))
+        x1 = int(b[0] + b[2])
         y1 =  int(b[1])
-        x1_d = (b[0] + b[2])- int((b[0] + b[2]))
+        x1_d = (b[0] + b[2])- int(b[0] + b[2])
         y1_d = b[1] - int(b[1])
 
         x2 = int(b[0])
-        y2 = int((b[1] + H))
+        y2 = int(b[1] + H)
         x2_d = b[0] - int(b[0])
-        y2_d = (b[1] + H) - int((b[1] + H))
+        y2_d = (b[1] + H) - int(b[1] + H)
 
-        x3 = int((b[0] + b[2]))
+        x3 = int(b[0] + b[2])
         y3 = int((b[1] + H))
-        x3_d = (b[0] + b[2]) - int((b[0] + b[2]))
-        y3_d = (b[1] + H) - int((b[1] + H))
+        x3_d = (b[0] + b[2]) - int(b[0] + b[2])
+        y3_d = (b[1] + H) - int(b[1] + H)
 
-        xc = int((b[0] + b[2] / 2))
-        yc = int((b[1] + b[3] / 2))
-        xc_d = (b[0] + b[2] / 2) - int((b[0] + b[2] / 2))
-        yc_d = (b[1] + b[3] / 2)  - int((b[1] + b[3] / 2))
+        xc = int(b[0] + b[2] / 2)
+        yc = int(b[1] + b[3] / 2)
+        xc_d = (b[0] + b[2] / 2) - int(b[0] + b[2] / 2)
+        yc_d = (b[1] + b[3] / 2)  - int(b[1] + b[3] / 2)
 
         x0_ = (x0, y0)
         x1_ = (x1, y1)
         x2_ = (x2, y2)
         x3_ = (x3, y3)
-        xc_ = (xc. yc)
+        xc_ = (xc, yc)
         gt_ps += [x0_, x1_, x2_, x3_]
         gt_ps_d += [(x0_d, y0_d), (x1_d, y1_d), (x2_d, y2_d), (x3_d, y3_d)]
         gt_cs.append(xc_)
         gt_cs_d.append((xc_d, yc_d))
 
         gt_label = t.zeros((classes))
-        gt_label[labels[which]] = 1
+        gt_label[labels[0][which]] = 1
         gt_labels.append(gt_label)
 
         gt_linkc_x = t.zeros((grid_size))
@@ -79,7 +83,10 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
 
         gt_linkp_x = t.zeros((4, grid_size))
         gt_linkp_y = t.zeros((4, grid_size))
+        print(gt_ps[0])
         for i, (p_x, p_y) in enumerate(gt_ps):
+            print("p_x")
+            print(p_x)
             gt_linkp_x[i][p_x] = 1
             gt_linkp_y[i][p_y] = 1
         gt_linkps_x.append(gt_linkp_x)
@@ -119,7 +126,7 @@ class PointLinkTrainer(nn.Module):
         """
         loss = list()
         gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = \
-            gt_convert(bboxes, labels, H, W, self.grid_size)
+            gt_convert(bboxes, labels, H, W, self.grid_size, self.classes)
 
         for direction in range(4):
             total_loss = 0
