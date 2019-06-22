@@ -39,25 +39,49 @@ class Fourbranch(nn.Module):
         self.branch0 = nn.Sequential(
             BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
             BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(204, 204, [3, 3, 3, 3, 3, 3, 3], stride=[1, 1, 1, 1, 1, 1, 1], padding=[2, 2, 4, 8, 16, 1, 1], dilation=[2, 2, 4, 8, 16, 1, 1], bias=True)
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=4, dilation=4, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=8, dilation=8, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=16, dilation=16, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
        ) 
  
         self.branch1 = nn.Sequential(
             BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
             BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
-            #nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=4, dilation=4, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=8, dilation=8, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=16, dilation=16, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
         )
 
         self.branch2 = nn.Sequential(
             BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
             BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
-            #nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=4, dilation=4, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=8, dilation=8, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=16, dilation=16, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
         )
 
         self.branch3 = nn.Sequential(
             BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
             BasicConv2d(1536, 204, kernel_size=3, stride=1, padding=1),
-            #nn.Conv2d(204, 204, (3, 3, 3, 3, 3, 3), stride=(1, 1, 1, 1, 1, 1, 1), padding=(2, 2, 4, 8, 16, 1, 1), dilation=(2, 2, 4, 8, 16, 1, 1), bias=True)
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=2, dilation=2, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=4, dilation=4, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=8, dilation=8, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=16, dilation=16, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
+            nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
         )
 
     def forward(self, x):
