@@ -7,6 +7,7 @@ from torch import nn
 import torch as t
 
 from utils.config import opt
+from utils.vis_tool import Visualizer
 
 '''LossTuple = namedtuple('LossTuple',
                        ['pt_loc_loss',
@@ -101,6 +102,7 @@ class PointLinkTrainer(nn.Module):
         self.w_coord = 1
         self.w_link = 1
         self.total_loss = 0
+        self.vis = Visualizer(env=opt.env)
 
     def compute_loss(self, out_four, bboxes, labels, H, W):
         """
@@ -174,6 +176,8 @@ class PointLinkTrainer(nn.Module):
     def forward(self, imgs, bboxes, labels, direction):
         _, _, H, W = imgs.shape
         img_size = (H, W)
+        print("yyyyyyyyyyyyyyyyyyyyyyy")
+        print(imgs.shape)  #yy
         out_four = self.point_link(imgs)
 
         loss = self.compute_loss(out_four, bboxes, labels, H, W)

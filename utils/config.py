@@ -8,8 +8,8 @@ from pprint import pprint
 class Config:
     # data
     voc_data_dir = './VOCdevkit/VOC2007/'
-    min_size = 600  # image resize
-    max_size = 1000 # image resize
+    min_size = 448  # image resize
+    max_size = 448 # image resize
     num_workers = 1#8
     test_num_workers = 1#8
 
@@ -31,8 +31,8 @@ class Config:
 
     # preset
     data = 'voc'
-    pretrained_model = 'vgg16'
-
+    #pretrained_model = 'vgg16'
+    pretrained_model = 'inceptionresnetv2'
     # training
     epoch = 14
 
@@ -40,6 +40,8 @@ class Config:
     use_adam = False # Use Adam optimizer
     use_chainer = False # try match everything as chainer
     use_drop = False # use dropout in RoIHead
+    use_RMSProp = False    
+
     # debug
     debug_file = '/tmp/debugf'
 
@@ -48,8 +50,8 @@ class Config:
     load_path = None
 
     caffe_pretrain = False # use caffe pretrained model instead of torchvision
-    caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
-
+    #caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
+    caffe_pretrain_path = 'checkpoints/inceptionresnetv2.pth'
     def _parse(self, kwargs):
         state_dict = self._state_dict()
         for k, v in kwargs.items():

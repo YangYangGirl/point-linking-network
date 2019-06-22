@@ -74,7 +74,7 @@ def train(**kwargs):
     best_map = 0
     lr_ = opt.lr
     for epoch in range(opt.epoch):
-        trainer.reset_meters()
+        #trainer.reset_meters()
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()

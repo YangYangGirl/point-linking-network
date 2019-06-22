@@ -94,6 +94,7 @@ class Point_Linking(nn.Module):
     def forward(self, x, scale=1.):
         img_size = x.shape[2:]
         grid_size  = x.size(3)
+        print("x.shape:" + str(x.shape))
         f = self.inception_V2(x)
         four_out = self.fourbranch(f)
         if grid_size != self.grid_size:
