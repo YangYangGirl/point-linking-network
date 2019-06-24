@@ -1,6 +1,6 @@
 # A Simple Implementation of Point Linking Network
 
-## 1. Introduction
+## Introduction
 
 **I've update the code to support both Python2 and Python3, PyTorch 0.4.**
 
