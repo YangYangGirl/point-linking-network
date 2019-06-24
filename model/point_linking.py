@@ -85,12 +85,10 @@ class Fourbranch(nn.Module):
         )
 
     def forward(self, x):
-        print("x:"+str(x.shape))
         x0 = self.branch0(x)
         x1 = self.branch1(x)
         x2 = self.branch2(x)
         x3 = self.branch3(x)
-        print("x3"+str(x3.shape))
         return t.stack([x0, x1, x2, x3], 1)
 
 class Point_Linking(nn.Module):
@@ -121,7 +119,6 @@ class Point_Linking(nn.Module):
     def forward(self, x, scale=1.):
         img_size = x.shape[2:]
         grid_size  = x.size(3)
-        print("x.shape:" + str(x.shape))
         f = self.inception_V2(x)
         four_out = self.fourbranch(f)
         if grid_size != self.grid_size:

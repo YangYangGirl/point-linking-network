@@ -307,7 +307,6 @@ class InceptionResNetV2(nn.Module):
     def features(self, input):
         x = self.conv2d_1a(input)
         x = self.conv2d_2a(x)
-        print("conv2d_2a"+str(x.shape))
         x = self.conv2d_2b(x)
         x = self.maxpool_3a(x)
         x = self.conv2d_3b(x)
@@ -316,22 +315,15 @@ class InceptionResNetV2(nn.Module):
         x = self.mixed_5b(x)
         x = self.repeat(x)
         x = self.mixed_6a(x)
-        print("mixed_6a"+str(x.shape))
         x = self.repeat_1(x)
         x = self.mixed_7a(x)
         x = self.repeat_2(x)
         x = self.block8(x)
-        print("block8"+str(x.shape))
         x = self.conv2d_7b_yy(x)
-        print("conv2d_7b_yy"+str(x.shape))
         x = self.avgpool_1a(x)
-        print("avgpool_1a"+str(x.shape))
         x = self.conv1(x)
-        print("conv1"+str(x.shape))
         x = self.conv2(x)
-        print("conv2"+str(x.shape))
         x = self.conv3(x)
-        print("conv3"+str(x.shape))        
 
         return x
 

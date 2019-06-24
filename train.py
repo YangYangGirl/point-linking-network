@@ -12,7 +12,7 @@ from data.dataset import Dataset, TestDataset, inverse_normalize
 from model.point_linking_inceptionresnetv2 import PointLinkInception
 
 from torch.utils import data as data_
-from traineryy import PointLinkTrainer
+from trainer import PointLinkTrainer
 from utils import array_tool as at
 from utils.vis_tool import visdom_bbox
 from utils.eval_tool import eval_detection_voc
@@ -78,18 +78,14 @@ def train(**kwargs):
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
-            print("=========================")
-            print("img shape"+str(img.shape))
-            print(bbox)
-            print("=========================")
             trainer.train_step(img, bbox, label, scale)
 
             if (ii + 1) % opt.plot_every == 0:
                 if os.path.exists(opt.debug_file):
                     ipdb.set_trace()
 
-                # plot loss
-                trainer.vis.plot_many(trainer.get_meter_data())
+                # plot loss  yy
+                #trainer.vis.plot_many(trainer.get_meter_data())
 
                 # plot groud truth bboxes
                 ori_img_ = inverse_normalize(at.tonumpy(img[0]))

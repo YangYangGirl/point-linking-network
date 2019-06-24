@@ -89,8 +89,6 @@ class Transform(object):
         img = preprocess(img, self.min_size, self.max_size)
         _, o_H, o_W = img.shape
         scale = o_H / H
-        print("---------yy--------")
-        print(o_H, H, scale)
         bbox = util.resize_bbox(bbox, (H, W), (o_H, o_W))
 
         # horizontally flip
