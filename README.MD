@@ -1,14 +1,14 @@
-# A Simple and Fast Implementation of Faster R-CNN
+# A Simple Implementation of Point Linking Network
 
 ## 1. Introduction
 
-**I've update the code to support both Python2 and Python3, PyTorch 0.4. If you want the old version code please checkout branch [v0.3](https://github.com/chenyuntc/simple-faster-rcnn-pytorch/tree/0.3)**
+**I've update the code to support both Python2 and Python3, PyTorch 0.4.**
 
-This project is a **Simplified** Faster R-CNN implementation based on [chainercv](https://github.com/chainer/chainercv) and other [projects](#acknowledgement) . It aims to:
+This project is a **Simplified** Point Linking Network implementation based on [chainercv](https://github.com/chainer/chainercv) and other [projects](#acknowledgement) . It aims to:
 
 - Simplify the code (*Simple is better than complex*)
 - Make the code more straightforward (*Flat is better than nested*)
-- Match the performance reported in [origin paper](https://arxiv.org/abs/1506.01497) (*Speed Counts and mAP Matters*)
+- Match the performance reported in [origin paper](https://arxiv.org/abs/1706.03646) [my note](https://yangyanggirl.github.io/2019/06/13/Point-Linking-Network-for-Object-Detection%E8%AE%BA%E6%96%87%E7%AC%94%E8%AE%B0/)(*Speed Counts and mAP Matters*)
 
 And it has the following features:
 - It can be run as pure Python code, no more build affair. (cuda code moves to cupy, Cython acceleration are optional)
@@ -26,7 +26,7 @@ And it has the following features:
 
 ### 2.1 mAP
 
-VGG16 train on `trainval` and test on `test` split. 
+Inceptionresnetv2 train on `trainval` and test on `test` split. 
 
 **Note**: the training shows great randomness, you may need a bit of luck and more epoches of training to reach the highest mAP. However, it should be easy to surpass the lower bound. 
 
