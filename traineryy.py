@@ -65,20 +65,21 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
         gt_ps_d.append([[x0_d, y0_d], [x1_d, y1_d], [x2_d, y2_d], [x3_d, y3_d]])
         gt_cs.append(xc_)
         gt_cs_d.append([xc_d, yc_d])
-        gt_label = t.zeros((classes))
+        gt_label = np.zeros((classes)).tolist()
         gt_label[labels[0][which]] = 1
         gt_labels.append(gt_label)
 
-        gt_linkc_x = t.zeros((grid_size))
+        gt_linkc_x = np.zeros((grid_size)).tolist()
         gt_linkc_x[xc] = 1
         gt_linkcs_x.append(gt_linkc_x)
-        gt_linkc_y = t.zeros((grid_size))
+        gt_linkc_y = np.zeros((grid_size)).tolist()
         gt_linkc_y[yc] = 1
         gt_linkcs_y.append(gt_linkc_y)
 
-        gt_linkp_x = t.zeros((4, grid_size))
-        gt_linkp_y = t.zeros((4, grid_size))
-        for i, p in enumerate(gt_ps[which: which + 4]):
+        gt_linkp_x = np.zeros((4, grid_size)).tolist()
+        gt_linkp_y = np.zeros((4, grid_size)).tolist()
+        print(gt_ps[0: 4])
+        for i, p in enumerate(gt_ps[which][0: 4]):
             print(i)
             print("i")
             gt_linkp_x[i][p[0]] = 1
@@ -86,11 +87,7 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
         gt_linkps_x.append(gt_linkp_x)
         gt_linkps_y.append(gt_linkp_y)
    
-    print("========")
-    print(gt_linkcs_y)
-    print(t.Tensor(gt_linkcs_y).cuda())
-    print("====cuda===========") 
-    return t.Tensor(gt_ps).cuda(), t.Tensor(gt_ps_d).cuda(), t.Tensor(gt_cs).cuda(), t.Tensor(gt_cs_d).cuda(), t.Tensor(gt_labels).cuda(), t.Tensor(gt_linkcs_x).cuda(), t.Tensor(gt_linkcs_y).cuda(), t.Tensor(gt_linkps_x).cuda(), t.Tensor(gt_linkps_y).cuda()
+    return gt_ps, t.Tensor(gt_ps_d).cuda(), t.Tensor(gt_cs).cuda(), t.Tensor(gt_cs_d).cuda(), t.Tensor(gt_labels).cuda(), t.Tensor(gt_linkcs_x).cuda(), t.Tensor(gt_linkcs_y).cuda(), t.Tensor(gt_linkps_x).cuda(), t.Tensor(gt_linkps_y).cuda()
 
 
 class PointLinkTrainer(nn.Module):
@@ -122,7 +119,7 @@ class PointLinkTrainer(nn.Module):
         Returns: losses of four branches
 
         """
-        loss = list()
+        loss = t.empty(4)
         gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = \
             gt_convert(bboxes, labels, H, W, self.grid_size, self.classes)
         out_four = out_four[0]
@@ -175,7 +172,7 @@ class PointLinkTrainer(nn.Module):
                                 loss_nopt = out[i_x, i_y, j, 0] ** 2
                                 total_loss += loss_nopt
             loss[direction] = total_loss
-        return loss
+        return t.sum(loss)
 
 
     def forward(self, imgs, bboxes, labels, direction):
