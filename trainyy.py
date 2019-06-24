@@ -78,6 +78,10 @@ def train(**kwargs):
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
+            print("=========================")
+            print("img shape"+str(img.shape))
+            print(bbox)
+            print("=========================")
             trainer.train_step(img, bbox, label, scale)
 
             if (ii + 1) % opt.plot_every == 0:
