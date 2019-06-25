@@ -25,6 +25,9 @@ def pytorch_normalze(img):
     normalize = tvtsf.Normalize(mean=[0.485, 0.456, 0.406],
                                 std=[0.229, 0.224, 0.225])
     img = normalize(t.from_numpy(img))
+    print("================img===============")
+    print(img)
+    print("================img===============")
     return img.numpy()
 
 

@@ -125,11 +125,16 @@ class Point_Linking(nn.Module):
             self.compute_grid_offsets(grid_size, cuda=x.is_cuda) 
         return four_out
 
+    def compute_area(self, a, b):
+        x_area = [[0, a], [a+1, self.grid_size], [0, a], [a+1, self.grid_size]]
+        y_area = [[0, b], [0, b], [b+1, self.grid_size], [b+1, self.grid_size]]
+        return x_area, y_area
+        
     def predict(self, imgs, size=None, visualize=False):
         bboxes = list()
         labels = list()
         scores = list()
-
+        '''
         self.eval()
         if visualize:
             self.use_preset('visualize')
@@ -144,6 +149,7 @@ class Point_Linking(nn.Module):
              prepared_imgs = imgs
 
         link_mnst = t.zeros(self.grid_size**4*self.classes)
+        results = list()
         for img, size in zip(prepared_imgs, sizes):
             four_out = self(img)
             for i in range(self.B):
@@ -151,10 +157,11 @@ class Point_Linking(nn.Module):
                 out_c = four_out[self.B+i].reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
                 for b in range(self.grid_size):
                     for a in range(self.grid_size):
-                        for n in range(self.grid_size):
-                            for m in range(self.grid_size):
+                        x_area, y_area = self.compute_area(a, b)
+                        for n in range(y_area[i]):
+                            for m in range(x_area[i]):
                                 for c in range(self.classes):
-                                    p_mn = out_p[m, n, 0: 1]
+                                    p_mn = out_p[m, n, 0: 1]        #(m, n) center point; (a, b) point
                                     p_ab = out_c[a, b, 0: 1]
                                     q_cmn = out_p[m, n, 1: 1+c]
                                     q_cab = out_c[a, b, 1: 1+c]
@@ -162,19 +169,16 @@ class Point_Linking(nn.Module):
                                     l_mn_b = out_c[m, n, 37+b]
                                     l_ab_m = out_p[a, b, 23+n]
                                     l_ab_n = out_c[a, b, 37+n]
-                                    link_mnst[c*14*14*14*21+b*14*14*14+a*14*14+n*14+m] = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
-
-                r = t.argmax(link_mnst)
-                m_ = r%14
-                n_ = r//14%14
-                s_ = r//14//14%14
-                t_ = r//14//14//14%14
-                c_ = r//14//14//14//21%21
-                bbox = [m_, n_, 2*(m_ - s_), 2*(t_ - n_)]
-                bboxes.append(bbox)
-                labels.append(c_)
-                scores.append(r)
-
+                                    #link_mnst[c*14*14*14*21+b*14*14*14+a*14*14+n*14+m] = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
+                                    score = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
+                                    if score > 0.3:
+                                        results.append([m, n, a, b, c, score])
+                for p in results: 
+                    bbox = [p[0], p[1], 2*p[2]-p[0], 2*p[3] - p[1]]
+                    bboxes.append(bbox)
+                    labels.append(p[4])
+                    scores.append(p[5])
+        '''
         self.use_preset('evaluate')
         self.train()
         return bboxes, labels, scores
