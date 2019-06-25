@@ -78,10 +78,7 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
 
         gt_linkp_x = np.zeros((4, grid_size)).tolist()
         gt_linkp_y = np.zeros((4, grid_size)).tolist()
-        print(gt_ps[0: 4])
         for i, p in enumerate(gt_ps[which][0: 4]):
-            print(i)
-            print("i")
             gt_linkp_x[i][p[0]] = 1
             gt_linkp_y[i][p[1]] = 1
         gt_linkps_x.append(gt_linkp_x)
@@ -178,8 +175,6 @@ class PointLinkTrainer(nn.Module):
     def forward(self, imgs, bboxes, labels, direction):
         _, _, H, W = imgs.shape
         img_size = (H, W)
-        print("yyyyyyyyyyyyyyyyyyyyyyy")
-        print(imgs.shape)  #yy
         out_four = self.point_link(imgs)
 
         loss = self.compute_loss(out_four, bboxes, labels, H, W)
@@ -243,3 +238,4 @@ class PointLinkTrainer(nn.Module):
         if 'optimizer' in state_dict and load_optimizer:
             self.optimizer.load_state_dict(state_dict['optimizer'])
         return self
+
