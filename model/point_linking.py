@@ -118,11 +118,9 @@ class Point_Linking(nn.Module):
 
     def forward(self, x, scale=1.):
         img_size = x.shape[2:]
-        grid_size  = x.size(3)
         f = self.inception_V2(x)
         four_out = self.fourbranch(f)
-        if grid_size != self.grid_size:
-            self.compute_grid_offsets(grid_size, cuda=x.is_cuda) 
+        self.compute_grid_offsets(self.grid_size, cuda=x.is_cuda) 
         return four_out
 
     def compute_area(self, a, b):
@@ -134,7 +132,7 @@ class Point_Linking(nn.Module):
         bboxes = list()
         labels = list()
         scores = list()
-        '''
+        
         self.eval()
         if visualize:
             self.use_preset('visualize')
@@ -147,31 +145,33 @@ class Point_Linking(nn.Module):
                 sizes.append(size)
         else:
              prepared_imgs = imgs
-
-        link_mnst = t.zeros(self.grid_size**4*self.classes)
+        '''
+        #link_mnst = t.zeros(self.grid_size**4*self.classes)
+        direction = 0
         results = list()
         for img, size in zip(prepared_imgs, sizes):
-            four_out = self(img)
+            four_out = self(t.from_numpy(img).unsqueeze(0).cuda().float())
             for i in range(self.B):
-                out_p = four_out[i].reshape([self.grid_size,self.grid_size, 2*self.B, 51])
-                out_c = four_out[self.B+i].reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
+                out_p = four_out[0][direction].reshape([self.grid_size,self.grid_size, 2 * self.B, 51])
+                out_c = four_out[0][direction].reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
                 for b in range(self.grid_size):
                     for a in range(self.grid_size):
                         x_area, y_area = self.compute_area(a, b)
-                        for n in range(y_area[i]):
-                            for m in range(x_area[i]):
+                        for n in range(y_area[i][0], y_area[i][1]):
+                            for m in range(x_area[i][0], x_area[i][1]):
                                 for c in range(self.classes):
-                                    p_mn = out_p[m, n, 0: 1]        #(m, n) center point; (a, b) point
-                                    p_ab = out_c[a, b, 0: 1]
-                                    q_cmn = out_p[m, n, 1: 1+c]
-                                    q_cab = out_c[a, b, 1: 1+c]
-                                    l_mn_a = out_p[m, n, 23+a]
-                                    l_mn_b = out_c[m, n, 37+b]
-                                    l_ab_m = out_p[a, b, 23+n]
-                                    l_ab_n = out_c[a, b, 37+n]
+                                    p_mn = out_p[m, n, i, 0]        #(m, n) center point; (a, b) point
+                                    p_ab = out_c[a, b, i+self.B, 0]
+                                    q_cmn = out_p[m, n, i, 1+c]
+                                    q_cab = out_c[a, b, i+self.B, 1+c]
+                                    l_mn_a = out_p[m, n, i, 23+a]
+                                    l_mn_b = out_c[m, n, i+self.B, 37+b]
+                                    l_ab_m = out_p[a, b, i, 23+m]
+                                    l_ab_n = out_c[a, b, i+self.B, 37+n]
                                     #link_mnst[c*14*14*14*21+b*14*14*14+a*14*14+n*14+m] = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
                                     score = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
                                     if score > 0.3:
+                                        print(score)
                                         results.append([m, n, a, b, c, score])
                 for p in results: 
                     bbox = [p[0], p[1], 2*p[2]-p[0], 2*p[3] - p[1]]
@@ -179,6 +179,11 @@ class Point_Linking(nn.Module):
                     labels.append(p[4])
                     scores.append(p[5])
         '''
+        print(bboxes) 
+        if bboxes==[]:
+            bboxes.append([])
+            labels.append([0])
+            scores.append([0]) 
         self.use_preset('evaluate')
         self.train()
         return bboxes, labels, scores

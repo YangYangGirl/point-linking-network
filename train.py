@@ -96,16 +96,13 @@ def train(**kwargs):
 
                 # plot predicti bboxes
                 _bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
+                 
                 pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),
                                        at.tonumpy(_labels[0]).reshape(-1),
                                        at.tonumpy(_scores[0]))
                 trainer.vis.img('pred_img', pred_img)
 
-                # rpn confusion matrix(meter)
-                trainer.vis.text(str(trainer.rpn_cm.value().tolist()), win='rpn_cm')
-                # roi confusion matrix
-                trainer.vis.img('roi_cm', at.totensor(trainer.roi_cm.conf, False).float())
         eval_result = eval(test_dataloader, point_link, test_num=opt.test_num)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
