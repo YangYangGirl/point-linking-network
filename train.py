@@ -99,7 +99,7 @@ def train(**kwargs):
                  
                 pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),
-                                       at.tonumpy(_labels[0]).reshape(-1),
+                                       at.tonumpy(_labels[0]),
                                        at.tonumpy(_scores[0]))
                 trainer.vis.img('pred_img', pred_img)
 

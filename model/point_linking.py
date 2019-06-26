@@ -145,7 +145,7 @@ class Point_Linking(nn.Module):
                 sizes.append(size)
         else:
              prepared_imgs = imgs
-        '''
+
         #link_mnst = t.zeros(self.grid_size**4*self.classes)
         direction = 0
         results = list()
@@ -178,12 +178,13 @@ class Point_Linking(nn.Module):
                     bboxes.append(bbox)
                     labels.append(p[4])
                     scores.append(p[5])
-        '''
-        print(bboxes) 
+
+        print(bboxes)
+
         if bboxes==[]:
-            bboxes.append([])
-            labels.append([0])
-            scores.append([0]) 
+            bboxes = np.zeros((0,))
+            labels = np.zeros((0,))
+            scores = np.zeros((0,))
         self.use_preset('evaluate')
         self.train()
         return bboxes, labels, scores
