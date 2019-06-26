@@ -99,9 +99,7 @@ def vis_bbox(img, bbox, label=None, score=None, ax=None):
     ax = vis_image(img, ax=ax)
 
     # If there is no bounding box to display, visualize the image and exit.
-    print("====bbox======")
-    print(bbox)
-    if bbox == []:
+    if bbox is None:
         return ax
 
     for i, bb in enumerate(bbox):

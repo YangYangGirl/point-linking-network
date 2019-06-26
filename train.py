@@ -105,7 +105,7 @@ def train(**kwargs):
 
         eval_result = eval(test_dataloader, point_link, test_num=opt.test_num)
         trainer.vis.plot('test_map', eval_result['map'])
-        lr_ = trainer.faster_rcnn.optimizer.param_groups[0]['lr']
+        lr_ = trainer.point_link.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),
                                                   str(eval_result['map']),
                                                   str(trainer.get_meter_data()))
@@ -116,7 +116,7 @@ def train(**kwargs):
             best_path = trainer.save(best_map=best_map)
         if epoch == 9:
             trainer.load(best_path)
-            trainer.faster_rcnn.scale_lr(opt.lr_decay)
+            trainer.point_link.scale_lr(opt.lr_decay)
             lr_ = lr_ * opt.lr_decay
 
         if epoch == 13:
