@@ -182,9 +182,9 @@ class Point_Linking(nn.Module):
         print(bboxes)
 
         if bboxes==[]:
-            bboxes = np.zeros((0,))
-            labels = np.zeros((0,))
-            scores = np.zeros((0,))
+            bboxes.append([])
+            labels.append([])
+            scores.append([])
         self.use_preset('evaluate')
         self.train()
         return bboxes, labels, scores
