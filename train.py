@@ -74,18 +74,18 @@ def train(**kwargs):
     best_map = 0
     lr_ = opt.lr
     for epoch in range(opt.epoch):
-        #trainer.reset_meters()
+        trainer.reset_meters()
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
-            trainer.train_step(img, bbox, label, scale)
+            trainer.train_step(img, bbox, label)
 
             if (ii + 1) % opt.plot_every == 0:
                 if os.path.exists(opt.debug_file):
                     ipdb.set_trace()
 
-                # plot loss  yy
-                #trainer.vis.plot_many(trainer.get_meter_data())
+                # plot loss 
+                trainer.vis.plot_many(trainer.get_meter_data())
 
                 # plot groud truth bboxes
                 ori_img_ = inverse_normalize(at.tonumpy(img[0]))
@@ -96,13 +96,11 @@ def train(**kwargs):
 
                 # plot predicti bboxes
                 _bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
-                 
                 pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),
                                        at.tonumpy(_labels[0]),
                                        at.tonumpy(_scores[0]))
                 trainer.vis.img('pred_img', pred_img)
-
         eval_result = eval(test_dataloader, point_link, test_num=opt.test_num)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.point_link.optimizer.param_groups[0]['lr']
@@ -110,8 +108,13 @@ def train(**kwargs):
                                                   str(eval_result['map']),
                                                   str(trainer.get_meter_data()))
         trainer.vis.log(log_info)
-
-        if eval_result['map'] > best_map:
+        print("==========epoch==========")
+        print(epoch)
+        print("=========eval_result['map']==========")
+        print(eval_result['map'])
+        print("=========best_map=========")
+        print(best_map) 
+        if eval_result['map'] >= best_map:
             best_map = eval_result['map']
             best_path = trainer.save(best_map=best_map)
         if epoch == 9:

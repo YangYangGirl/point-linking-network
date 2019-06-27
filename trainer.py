@@ -9,13 +9,18 @@ import torch as t
 import numpy as np
 from utils.config import opt
 from utils.vis_tool import Visualizer
+from torchnet.meter import ConfusionMeter, AverageValueMeter
 
-'''LossTuple = namedtuple('LossTuple',
-                       ['pt_loc_loss',
+LossTuple = namedtuple('LossTuple',
+                       ['pt_pexist_loss',
+                        'pt_cls_loss',
+                        'pt_offset_loss',
+                        'pt_link_loss',
+                        'pt_loss',
                         'nopt_loss',
-                        'total_loss'
+                        'total_loss',
                         ])
-'''
+
 def gt_convert(bboxes, labels, H, W, grid_size, classes):
 #need to optimize the situation of repetitive elements
     gt_ps = list()
@@ -101,6 +106,7 @@ class PointLinkTrainer(nn.Module):
         self.w_coord = 1
         self.w_link = 1
         self.total_loss = 0
+        self.meters = {k: AverageValueMeter() for k in LossTuple._fields}
         self.vis = Visualizer(env=opt.env)
 
     def compute_loss(self, out_four, bboxes, labels, H, W):
@@ -120,8 +126,14 @@ class PointLinkTrainer(nn.Module):
         gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = \
             gt_convert(bboxes, labels, H, W, self.grid_size, self.classes)
         out_four = out_four[0]
+        total_loss = 0
+        loss1 = 0
+        loss2 = 0
+        loss3 = 0
+        loss4 = 0
+        loss_pt = 0
+        loss_nopt = 0
         for direction in range(4):
-            total_loss = 0
             out = out_four[direction].reshape([14, 14, 2 * self.B, 51])
             for i_x in range(14):
                 for i_y in range(14):
@@ -130,49 +142,46 @@ class PointLinkTrainer(nn.Module):
                             if [i_x, i_y] in gt_ps:
                                 which = gt_ps.index([i_x, i_y])
                                 x_ij, y_ij = gt_ps_d[which]
-                                loss1 = (out[i_x, i_y, j, 0] - 1) ** 2
-                                loss2 = self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
+                                loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
+                                loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[int(which / 4)])
-                                loss3 = self.w_coord * self.mse_loss(
+                                loss3 += self.w_coord * self.mse_loss(
                                     out[i_x, i_y, j, 1 + self.classes: 3 + self.classes], gt_ps_d[which])
-                                loss4 = self.w_link * self.mse_loss(
+                                loss4 += self.w_link * self.mse_loss(
                                     out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size],
                                     gt_linkcs_x[which // 4]) + \
                                         self.mse_loss(out[
                                                       3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
                                                       gt_linkcs_y[which // 4])
-
-                                loss_pt = loss1 + loss2 + loss3 + loss4
-                                total_loss += loss_pt
+                         
                             else:
-                                loss_nopt = out[i_x, i_y, j, 0] ** 2
-                                total_loss += loss_nopt
+                                loss_nopt += out[i_x, i_y, j, 0] ** 2
                         if j >= self.B:
                             if [i_x, i_y] in gt_ps:
                                 which = gt_ps.index([i_x, i_y])
                                 x_ij, y_ij = gt_cs_d[which]
-                                loss1 = (out[i_x, i_y, j, 0] - 1) ** 2
-                                loss2 = self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
+                                loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
+                                loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
-                                loss3 = self.w_coord * self.mse_loss(
+                                loss3 += self.w_coord * self.mse_loss(
                                     out[i_x, i_y, j, 1 + self.classes: 3 + self.classes] - gt_cs_d[which])
-                                loss4 = self.w_link * self.mse_loss(
+                                loss4 += self.w_link * self.mse_loss(
                                     out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size],
                                     gt_linkps_x[which][direction]) + \
                                         self.mse_loss(out[
                                                       3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
                                                       gt_linkps_y[which][direction])
 
-                                loss_pt = loss1 + loss2 + loss3 + loss4
-                                total_loss += loss_pt
                             else:
-                                loss_nopt = out[i_x, i_y, j, 0] ** 2
-                                total_loss += loss_nopt
-            loss[direction] = total_loss
-        return t.sum(loss)
+                                loss_nopt += out[i_x, i_y, j, 0] ** 2
+        loss_pt = loss1 + loss2 + loss3 + loss4
+        total_loss = loss_pt + loss_nopt
+        losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, total_loss]
+        
+        return LossTuple(*losses) 
 
 
-    def forward(self, imgs, bboxes, labels, direction):
+    def forward(self, imgs, bboxes, labels):
         _, _, H, W = imgs.shape
         img_size = (H, W)
         out_four = self.point_link(imgs)
@@ -181,13 +190,13 @@ class PointLinkTrainer(nn.Module):
 
         return loss
 
-    def train_step(self, imgs, bboxes, labels, direction):
+    def train_step(self, imgs, bboxes, labels):
         self.optimizer.zero_grad()
-        total_loss = self.forward(imgs, bboxes, labels, direction)
-        total_loss.backward()
+        losses = self.forward(imgs, bboxes, labels)
+        losses.total_loss.backward()
         self.optimizer.step()
 
-        return total_loss
+        return losses
 
 
     def save(self, save_optimizer=False, save_path=None, **kwargs):
@@ -225,6 +234,17 @@ class PointLinkTrainer(nn.Module):
         self.vis.save([self.vis.env])
         return save_path
 
+    def get_meter_data(self):
+        return {k: v.value()[0] for k, v in self.meters.items()}
+
+    def reset_meters(self):
+        for key, meter in self.meters.items():
+            meter.reset()
+
+    def update_meters(self, losses):
+        loss_d = {k: at.scalar(v) for k, v in losses._asdict().items()}
+        for key, meter in self.meters.items():
+            meter.add(loss_d[key])
 
     def load(self, path, load_optimizer=True, parse_opt=False, ):
         state_dict = t.load(path)

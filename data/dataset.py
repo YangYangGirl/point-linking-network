@@ -17,17 +17,36 @@ def inverse_normalize(img):
     return (img * 0.225 + 0.45).clip(min=0, max=1) * 255
 
 
+'''def pytorch_normalze(img):
+    """
+    https://github.com/pytorch/vision/issues/223
+    return appr -1~1 RGB
+    """
+    #normalize = tvtsf.Normalize(mean=[0.485, 0.456, 0.406],
+     #                           std=[0.229, 0.224, 0.225])
+    tensor = t.from_numpy(img)
+    mean=[0.485, 0.456, 0.406]
+    std=[0.229, 0.224, 0.225]
+    mean = t.as_tensor(mean,)
+    std = t.as_tensor(std)
+    tensor.sub_(mean[:, None, None]).div_(std[:, None, None])
+ 
+    return tensor.numpy()
+    #return img
+'''
 def pytorch_normalze(img):
     """
     https://github.com/pytorch/vision/issues/223
     return appr -1~1 RGB
     """
-    normalize = tvtsf.Normalize(mean=[0.485, 0.456, 0.406],
-                                std=[0.229, 0.224, 0.225])
-    #img = normalize(t.from_numpy(img.double()))
-    #return img.numpy()
-    return img
-
+    tensor = t.from_numpy(img)
+    dtype = tensor.dtype
+    mean = [0.485, 0.456, 0.406]
+    std = [0.229, 0.224, 0.225]
+    mean = t.as_tensor(mean, dtype=dtype, device=tensor.device)
+    std = t.as_tensor(std, dtype=dtype, device=tensor.device)
+    tensor.sub_(mean[:, None, None]).div_(std[:, None, None])
+    return tensor.numpy()
 
 def caffe_normalize(img):
     """

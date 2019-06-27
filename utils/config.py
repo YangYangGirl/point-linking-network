@@ -48,10 +48,12 @@ class Config:
     test_num = 10000
     # model
     load_path = None
+    
+    caffe_pretrain = False
 
-    caffe_pretrain = False # use caffe pretrained model instead of torchvision
+    use_pretrain = True # use caffe pretrained model instead of torchvision
     #caffe_pretrain_path = 'checkpoints/vgg16_caffe.pth'
-    caffe_pretrain_path = 'checkpoints/inceptionresnetv2.pth'
+    pretrain_path = 'checkpoints/inceptionresnetv2.pth'
     def _parse(self, kwargs):
         state_dict = self._state_dict()
         for k, v in kwargs.items():

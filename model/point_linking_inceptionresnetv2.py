@@ -9,12 +9,12 @@ from utils import array_tool as at
 from utils.config import opt
 
 def pretrained_inception():
-    if opt.caffe_pretrain:
+    if opt.use_pretrain:
         print("train pretrained")
         model = InceptionResNetV2()
         if not opt.load_path:
             model_dict = model.state_dict()
-            pretrained_dict = t.load_url(opt.caffe_pretrain_path)
+            pretrained_dict = t.load(opt.pretrain_path)
             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
             model_dict.update(pretrained_dict)
             model.load_state_dict(model_dict)
@@ -25,6 +25,6 @@ def pretrained_inception():
 
 class PointLinkInception(Point_Linking):
     def __init__(self):
-        inception = InceptionResNetV2()
+        inception = pretrained_inception()
 
         super(PointLinkInception, self).__init__(inception)
