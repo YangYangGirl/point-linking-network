@@ -89,12 +89,11 @@ class Fourbranch(nn.Module):
     def use_softmax(self, x):
         x = x.view([14, 14, 2 * self.B, 51])
         y = t.empty(14, 14, 2 * self.B, 51)
-        y[:, :, :, 0] = F.relu(x[:, :, :, 0].contiguous())
+        y[:, :, :, 0] = t.sigmoid(x[:, :, :, 0].contiguous())
         y[:, :, :, 1: 21] = F.softmax(x[:, :, :, 1: 21].contiguous(), dim=3)
-        y[:, :, :, 21: 23] = F.relu(x[:, :, :, 21: 23].contiguous())
+        y[:, :, :, 21: 23] = t.sigmoid(x[:, :, :, 21: 23].contiguous())
         y[:, :, :, 23: 37] = F.softmax(x[:, :, :, 23: 37].contiguous(), dim=3)
         y[:, :, :, 37: 51] = F.softmax(x[:, :, :, 37: 51].contiguous(), dim=3)
-
         return y
 
     def forward(self, x):
