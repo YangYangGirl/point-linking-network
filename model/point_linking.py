@@ -142,7 +142,7 @@ class Point_Linking(nn.Module):
         y_area = [[0, b], [0, b], [b+1, self.grid_size], [b+1, self.grid_size]]
         return x_area, y_area
         
-    def predict(self, imgs, size=None, visualize=False):
+    def predict(self, imgs, sizes=None, visualize=False):
         bboxes = list()
         labels = list()
         scores = list()
