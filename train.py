@@ -14,7 +14,7 @@ from model.point_linking_inceptionresnetv2 import PointLinkInception
 from torch.utils import data as data_
 from trainer import PointLinkTrainer
 from utils import array_tool as at
-from utils.vis_tool import visdom_bbox
+from utils.vis_tool import visdom_bbox, vis_image
 from utils.eval_tool import eval_detection_voc
 
 # fix for ulimit
@@ -96,10 +96,13 @@ def train(**kwargs):
 
                 # plot predicti bboxes
                 _bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
-                pred_img = visdom_bbox(ori_img_,
+                if _bboxes is not None:
+                    pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),
                                        at.tonumpy(_labels[0]),
                                        at.tonumpy(_scores[0]))
+                else:
+                    pred_img = vis_image(ori_img_)
                 trainer.vis.img('pred_img', pred_img)
         eval_result = eval(test_dataloader, point_link, test_num=opt.test_num)
         trainer.vis.plot('test_map', eval_result['map'])

@@ -150,6 +150,9 @@ class Point_Linking(nn.Module):
         direction = 0
         results = list()
         for img, size in zip(prepared_imgs, sizes):
+            bboxes_ = list()
+            labels_ = list()
+            scores_ = list()
             four_out = self(t.from_numpy(img).unsqueeze(0).cuda().float())
             for i in range(self.B):
                 out_p = four_out[0][direction].reshape([self.grid_size,self.grid_size, 2 * self.B, 51])
@@ -175,16 +178,13 @@ class Point_Linking(nn.Module):
                                         results.append([m, n, a, b, c, score])
                 for p in results: 
                     bbox = [p[0], p[1], 2*p[2]-p[0], 2*p[3] - p[1]]
-                    bboxes.append(bbox)
-                    labels.append(p[4])
-                    scores.append(p[5])
+                    bboxes_.append(bbox)
+                    labels_.append(p[4])
+                    scores_.append(p[5])  #result of a img
+            bboxes.append(bboxes_)
+            labels.append(labels_)
+            scores.append(scores_) 
 
-        print(bboxes)
-
-        if bboxes==[]:
-            bboxes.append([])
-            labels.append([])
-            scores.append([])
         self.use_preset('evaluate')
         self.train()
         return bboxes, labels, scores
