@@ -35,6 +35,7 @@ class Fourbranch(nn.Module):
 
     def __init__(self):
         super(Fourbranch, self).__init__()
+        self.B =2
 
         self.branch0 = nn.Sequential(
             BasicConv2d(1536, 1536, kernel_size=3, stride=1, padding=1),
@@ -46,6 +47,7 @@ class Fourbranch(nn.Module):
             nn.Conv2d(204, 204, 3, stride=1, padding=16, dilation=16, bias=True),
             nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
             nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
+            
        ) 
  
         self.branch1 = nn.Sequential(
@@ -84,12 +86,25 @@ class Fourbranch(nn.Module):
             nn.Conv2d(204, 204, 3, stride=1, padding=1, dilation=1, bias=True),
         )
 
+    def use_softmax(self, x):
+        x = x.view([14, 14, 2 * self.B, 51])
+        y = t.empty(14, 14, 2 * self.B, 51)
+        y[:, :, :, 0] = F.relu(x[:, :, :, 0].contiguous())
+        y[:, :, :, 1: 21] = F.softmax(x[:, :, :, 1: 21].contiguous(), dim=3)
+        y[:, :, :, 21: 23] = F.relu(x[:, :, :, 21: 23].contiguous())
+        y[:, :, :, 23: 37] = F.softmax(x[:, :, :, 23: 37].contiguous(), dim=3)
+        y[:, :, :, 37: 51] = F.softmax(x[:, :, :, 37: 51].contiguous(), dim=3)
+
+        return y
+
     def forward(self, x):
-        x0 = self.branch0(x)
-        x1 = self.branch1(x)
-        x2 = self.branch2(x)
-        x3 = self.branch3(x)
-        return t.stack([x0, x1, x2, x3], 1)
+        
+        x0 = self.use_softmax(self.branch0(x))
+        x1 = self.use_softmax(self.branch1(x))
+        x2 = self.use_softmax(self.branch2(x))
+        x3 = self.use_softmax(self.branch3(x))
+        
+        return t.stack([x0, x1, x2, x3], 0)
 
 class Point_Linking(nn.Module):
     
@@ -155,8 +170,8 @@ class Point_Linking(nn.Module):
             scores_ = list()
             four_out = self(t.from_numpy(img).unsqueeze(0).cuda().float())
             for i in range(self.B):
-                out_p = four_out[0][direction].reshape([self.grid_size,self.grid_size, 2 * self.B, 51])
-                out_c = four_out[0][direction].reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
+                out_p = four_out[direction]#.reshape([self.grid_size,self.grid_size, 2 * self.B, 51])
+                out_c = four_out[direction]#.reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
                 for b in range(self.grid_size):
                     for a in range(self.grid_size):
                         x_area, y_area = self.compute_area(a, b)

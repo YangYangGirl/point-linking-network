@@ -125,7 +125,6 @@ class PointLinkTrainer(nn.Module):
         loss = t.empty(4)
         gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = \
             gt_convert(bboxes, labels, H, W, self.grid_size, self.classes)
-        out_four = out_four[0]
         total_loss = 0
         loss1 = 0
         loss2 = 0
@@ -133,8 +132,9 @@ class PointLinkTrainer(nn.Module):
         loss4 = 0
         loss_pt = 0
         loss_nopt = 0
+        
         for direction in range(4):
-            out = out_four[direction].reshape([14, 14, 2 * self.B, 51])
+            out = out_four[direction]
             for i_x in range(14):
                 for i_y in range(14):
                     for j in range(2 * self.B):
@@ -193,6 +193,8 @@ class PointLinkTrainer(nn.Module):
     def train_step(self, imgs, bboxes, labels):
         self.optimizer.zero_grad()
         losses = self.forward(imgs, bboxes, labels)
+        #print("========losses.total_loss===========")
+        #print(losses.total_loss)
         losses.total_loss.backward()
         self.optimizer.step()
 
