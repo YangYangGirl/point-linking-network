@@ -10,7 +10,7 @@ class Config:
     voc_data_dir = './VOCdevkit/VOC2007/'
     min_size = 448  # image resize
     max_size = 448 # image resize
-    num_workers = 2#8
+    num_workers = 4#8
     test_num_workers = 1#8
 
     # sigma for l1_smooth_loss

@@ -76,6 +76,8 @@ def train(**kwargs):
     for epoch in range(opt.epoch):
         trainer.reset_meters()
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
+            if ii > 0:
+                break
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             trainer.train_step(img, bbox, label)
@@ -104,6 +106,7 @@ def train(**kwargs):
                 else:
                     pred_img = vis_image(ori_img_)
                 trainer.vis.img('pred_img', pred_img)
+            
         eval_result = eval(test_dataloader, point_link, test_num=opt.test_num)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.point_link.optimizer.param_groups[0]['lr']
