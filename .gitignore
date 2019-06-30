@@ -1,0 +1,7 @@
+__pycache__
+*.tar
+checkpoints
+VOCdevkit
+*.so
+*.pyc
+build
