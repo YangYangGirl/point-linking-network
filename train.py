@@ -27,7 +27,7 @@ resource.setrlimit(resource.RLIMIT_NOFILE, (20480, rlimit[1]))
 matplotlib.use('agg')
 
 
-def eval(dataloader, point_link, test_num=10000):
+def eval(dataloader, point_link, test_num=1000):
     pred_bboxes, pred_labels, pred_scores = list(), list(), list()
     gt_bboxes, gt_labels, gt_difficults = list(), list(), list()
     for ii, (imgs, sizes, gt_bboxes_, gt_labels_, gt_difficults_) in tqdm(enumerate(dataloader)):
@@ -40,7 +40,6 @@ def eval(dataloader, point_link, test_num=10000):
         pred_labels += pred_labels_
         pred_scores += pred_scores_
         if ii == test_num: break
-
     result = eval_detection_voc(
         pred_bboxes, pred_labels, pred_scores,
         gt_bboxes, gt_labels, gt_difficults,
@@ -76,8 +75,7 @@ def train(**kwargs):
     for epoch in range(opt.epoch):
         trainer.reset_meters()
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
-            if ii > 0:
-                break
+            if ii > 2:break
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             trainer.train_step(img, bbox, label)
@@ -106,8 +104,8 @@ def train(**kwargs):
                 else:
                     pred_img = vis_image(ori_img_)
                 trainer.vis.img('pred_img', pred_img)
-            
-        eval_result = eval(test_dataloader, point_link, test_num=opt.test_num)
+        print("begin eval")
+        eval_result = eval(test_dataloader, point_link, test_num=20)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.point_link.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),

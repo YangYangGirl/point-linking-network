@@ -9,9 +9,9 @@ class Config:
     # data
     voc_data_dir = './VOCdevkit/VOC2007/'
     min_size = 448  # image resize
-    max_size = 448 # image resize
-    num_workers = 4#8
-    test_num_workers = 1#8
+    max_size = 448# image resize
+    num_workers = 2#8
+    test_num_workers = 2#8
 
     # sigma for l1_smooth_loss
     rpn_sigma = 3.
@@ -45,7 +45,7 @@ class Config:
     # debug
     debug_file = '/tmp/debugf'
 
-    test_num = 10000
+    test_num = 2
     # model
     load_path = None
     

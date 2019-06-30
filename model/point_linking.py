@@ -157,14 +157,10 @@ class Point_Linking(nn.Module):
                 img = preprocess(at.tonumpy(img))
                 prepared_imgs.append(img)
                 sizes.append(size)
-            print("=======train img=======")
-            print(type(prepared_imgs))
         else:
              prepared_imgs = list()
              for img in imgs:
                  prepared_imgs.append(img.numpy())
-             print("=====eval img======")
-             print(type(prepared_imgs))
         #link_mnst = t.zeros(self.grid_size**4*self.classes)
         direction = 0
         results = list()
@@ -200,9 +196,9 @@ class Point_Linking(nn.Module):
                     bboxes_.append(bbox)
                     labels_.append(p[4])
                     scores_.append(p[5])  #result of a img
-            bboxes.append(bboxes_)
-            labels.append(labels_)
-            scores.append(scores_) 
+            bboxes.append(np.array(bboxes_))
+            labels.append(np.array(labels_))
+            scores.append(np.array(scores_))
 
         self.use_preset('evaluate')
         self.train()
