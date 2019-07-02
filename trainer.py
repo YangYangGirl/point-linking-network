@@ -89,7 +89,7 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
         gt_linkps_x.append(gt_linkp_x)
         gt_linkps_y.append(gt_linkp_y)
    
-    return gt_ps, t.Tensor(gt_ps_d).cuda(), t.Tensor(gt_cs).cuda(), t.Tensor(gt_cs_d).cuda(), t.Tensor(gt_labels).cuda(), t.Tensor(gt_linkcs_x).cuda(), t.Tensor(gt_linkcs_y).cuda(), t.Tensor(gt_linkps_x).cuda(), t.Tensor(gt_linkps_y).cuda()
+    return np.array(gt_ps), t.Tensor(gt_ps_d), t.Tensor(gt_cs), t.Tensor(gt_cs_d), t.Tensor(gt_labels), t.Tensor(gt_linkcs_x), t.Tensor(gt_linkcs_y), t.Tensor(gt_linkps_x), t.Tensor(gt_linkps_y)
 
 
 class PointLinkTrainer(nn.Module):
@@ -101,6 +101,7 @@ class PointLinkTrainer(nn.Module):
         self.B = 2
         self.optimizer = self.point_link.get_optimizer()
         self.mse_loss = nn.MSELoss()
+        self.cls_loss = nn.CrossEntropyLoss()
         self.classes = 20
         self.w_class = 1
         self.w_coord = 1
@@ -139,45 +140,44 @@ class PointLinkTrainer(nn.Module):
                 for i_y in range(14):
                     for j in range(2 * self.B):
                         if j < self.B:
-                            if [i_x, i_y] in gt_ps:
-                                which = gt_ps.index([i_x, i_y])
-                                x_ij, y_ij = gt_ps_d[which]
+                            if [i_x, i_y] in gt_ps[:, direction].tolist():
+                                index_tup = np.where(gt_ps[:, direction] == [i_x, i_y])
+                                which = index_tup[0][0]
+                                x_ij, y_ij = gt_ps_d[which][direction] 
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
-                                                                     gt_labels[int(which / 4)])
+                                                                     gt_labels[which])
                                 loss3 += self.w_coord * self.mse_loss(
-                                    out[i_x, i_y, j, 1 + self.classes: 3 + self.classes], gt_ps_d[which])
+                                    out[i_x, i_y, j, 1 + self.classes: 3 + self.classes], gt_ps_d[which][direction])
                                 loss4 += self.w_link * self.mse_loss(
-                                    out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size],
-                                    gt_linkcs_x[which // 4]) + \
-                                        self.mse_loss(out[
-                                                      3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
-                                                      gt_linkcs_y[which // 4])
-                         
+                                    out[i_x, i_y, j, 3 + self.classes: 3 + self.classes + self.grid_size],
+                                    gt_linkcs_x[which]) + \
+                                        self.mse_loss(
+                                        out[i_x, i_y, j, 3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
+                                        gt_linkcs_y[which])
                             else:
                                 loss_nopt += out[i_x, i_y, j, 0] ** 2
                         if j >= self.B:
-                            if [i_x, i_y] in gt_ps:
-                                which = gt_ps.index([i_x, i_y])
+                            if [i_x, i_y] in gt_ps[:, direction].tolist():
+                                index_tup = np.where(gt_ps[:, direction] == [i_x, i_y])
+                                which = index_tup[0][0]
                                 x_ij, y_ij = gt_cs_d[which]
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
                                 loss3 += self.w_coord * self.mse_loss(
-                                    out[i_x, i_y, j, 1 + self.classes: 3 + self.classes] - gt_cs_d[which])
+                                    out[i_x, i_y, j, 1 + self.classes: 3 + self.classes], gt_cs_d[which])
                                 loss4 += self.w_link * self.mse_loss(
-                                    out[i_x, i_y, 3 + self.classes: 3 + self.classes + self.grid_size],
+                                    out[i_x, i_y, j, 3 + self.classes: 3 + self.classes + self.grid_size],
                                     gt_linkps_x[which][direction]) + \
-                                        self.mse_loss(out[
-                                                      3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
-                                                      gt_linkps_y[which][direction])
-
+                                        self.mse_loss(
+                                        out[i_x, i_y, j, 3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
+                                        gt_linkcs_y[which])
                             else:
                                 loss_nopt += out[i_x, i_y, j, 0] ** 2
         loss_pt = loss1 + loss2 + loss3 + loss4
         total_loss = loss_pt + loss_nopt
         losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, total_loss]
-        
         return LossTuple(*losses) 
 
 
