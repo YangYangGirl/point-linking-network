@@ -176,7 +176,7 @@ class Point_Linking(nn.Module):
                 out_c = four_out[direction]#.reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
                 for b in range(self.grid_size):
                     for a in range(self.grid_size):
-                        if out_c[a, b, i+self.B, 0] < 0.1: goto .jump 
+                        if out_c[a, b, i+self.B, 0] < 0.1: continue 
                         x_area, y_area = self.compute_area(a, b)
                         for n in range(y_area[i][0], y_area[i][1]):
                             for m in range(x_area[i][0], x_area[i][1]):
@@ -191,11 +191,10 @@ class Point_Linking(nn.Module):
                                     l_ab_n = out_c[a, b, i+self.B, 37+n]
                                     #link_mnst[c*14*14*14*21+b*14*14*14+a*14*14+n*14+m] = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
                                     score = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
-                                    print(p_mn, p_ab, q_cmn, q_cab, l_mn_a, l_mn_b, l_ab_m, l_ab_n)
-                                    print(score)
+                                    #print(p_mn, p_ab, q_cmn, q_cab, l_mn_a, l_mn_b, l_ab_m, l_ab_n)
+                                    #print(score)
                                     if score > 0.3:
                                         results.append([m, n, a, b, c, score])
-                        label .jump
                 for p in results: 
                     bbox = [p[0], p[1], 2*p[2]-p[0], 2*p[3] - p[1]]
                     bboxes_.append(bbox)

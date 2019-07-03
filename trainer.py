@@ -4,8 +4,9 @@ from collections import namedtuple
 import time
 from torch.nn import functional as F
 from torch import nn
-import torch as t
 
+import torch as t
+from utils import array_tool as at
 import numpy as np
 from utils.config import opt
 from utils.vis_tool import Visualizer
@@ -178,6 +179,7 @@ class PointLinkTrainer(nn.Module):
         loss_pt = loss1 + loss2 + loss3 + loss4
         total_loss = loss_pt + loss_nopt
         losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, total_loss]
+        print("losses:  ", losses)
         return LossTuple(*losses) 
 
 
@@ -197,6 +199,7 @@ class PointLinkTrainer(nn.Module):
         #print(losses.total_loss)
         losses.total_loss.backward()
         self.optimizer.step()
+        self.update_meters(losses)
 
         return losses
 

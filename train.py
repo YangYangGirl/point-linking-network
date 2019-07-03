@@ -84,6 +84,7 @@ def train(**kwargs):
                     ipdb.set_trace()
 
                 # plot loss 
+                print("meter", trainer.get_meter_data())
                 trainer.vis.plot_many(trainer.get_meter_data())
 
                 # plot groud truth bboxes
@@ -94,7 +95,7 @@ def train(**kwargs):
                 trainer.vis.img('gt_img', gt_img)
 
                 # plot predicti bboxes
-                _bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
+                '''_bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
                 if _bboxes is not None:
                     pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),
@@ -102,7 +103,7 @@ def train(**kwargs):
                                        at.tonumpy(_scores[0]))
                 else:
                     pred_img = vis_image(ori_img_)
-                trainer.vis.img('pred_img', pred_img)
+                trainer.vis.img('pred_img', pred_img)'''
         print("begin eval")
         eval_result = eval(test_dataloader, point_link, test_num=5)
         trainer.vis.plot('test_map', eval_result['map'])
