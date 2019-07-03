@@ -241,14 +241,14 @@ class Point_Linking(nn.Module):
         for key, value in dict(self.named_parameters()).items():
             if value.requires_grad:
                 if 'bias' in key:
-                    params += [{'params': [value], 'lr': lr * 2, 'weight_decay': 0}]
+                    params += [{'params': [value], 'lr': lr * 2, 'weight_decay': 0.00004}]
                 else:
-                    params += [{'params': [value], 'lr': lr, 'weight_decay': opt.weight_decay}]
+                    params += [{'params': [value], 'lr': lr, 'weight_decay': 0.00004}]
             
         if opt.use_adam:
             self.optimizer = t.optim.Adam(params)
-        elif opt.use_RMSProp:
-            self.optimizer = t.optim.RMSProp(params, alpha=0.9)
+        elif opt.use_RMSprop:
+            self.optimizer = t.optim.RMSprop(params, alpha=0.9)
         else:
             self.optimizer = t.optim.SGD(params, momentum=0.9)
         return self.optimizer
