@@ -105,9 +105,10 @@ class PointLinkTrainer(nn.Module):
         self.cls_loss = nn.CrossEntropyLoss()
         self.classes = 20
         self.w_class = 1
-        self.w_coord = 1
+        self.w_coord = 5
         self.w_link = 1
-        self.total_loss = 0
+        self.w_pt = 1
+        self.w_nopt = 0.3
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}
         self.vis = Visualizer(env=opt.env)
 
@@ -177,7 +178,7 @@ class PointLinkTrainer(nn.Module):
                             else:
                                 loss_nopt += out[i_x, i_y, j, 0] ** 2
         loss_pt = loss1 + loss2 + loss3 + loss4
-        total_loss = loss_pt + loss_nopt
+        total_loss = self.w_pt * loss_pt + self.w_nopt * loss_nopt
         losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, total_loss]
         print("losses:  ", losses)
         return LossTuple(*losses) 
