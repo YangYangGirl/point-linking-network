@@ -72,6 +72,7 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
         gt_cs.append(xc_)
         gt_cs_d.append([xc_d, yc_d])
         gt_label = np.zeros((classes)).tolist()
+        print("labels[0][which]", labels[0][which])
         gt_label[labels[0][which]] = 1
         gt_labels.append(gt_label)
 
@@ -147,6 +148,7 @@ class PointLinkTrainer(nn.Module):
                                 which = index_tup[0][0]
                                 x_ij, y_ij = gt_ps_d[which][direction] 
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
+                                print([out[i_x, i_y, j, 1: 1 + self.classes], gt_labels[which], "check label"])
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
                                 loss3 += self.w_coord * self.mse_loss(
