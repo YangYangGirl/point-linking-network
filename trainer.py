@@ -101,7 +101,7 @@ class PointLinkTrainer(nn.Module):
         self.grid_size = 14
         self.B = 2
         self.optimizer = self.point_link.get_optimizer()
-        self.mse_loss = nn.MSELoss()
+        self.mse_loss = nn.MSELoss(size_average = False)
         self.cls_loss = nn.CrossEntropyLoss()
         self.classes = 20
         self.w_class = 1
