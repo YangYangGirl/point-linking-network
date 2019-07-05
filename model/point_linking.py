@@ -143,7 +143,23 @@ class Point_Linking(nn.Module):
         x_area = [[0, a], [a+1, self.grid_size], [0, a], [a+1, self.grid_size]]
         y_area = [[0, b], [0, b], [b+1, self.grid_size], [b+1, self.grid_size]]
         return x_area, y_area
+
+    def eval_center(self, imgs, sizes=None, visualize=True):
+        pred_centers = list() 
+        gt_bboxes = list()
+        loss_center = 0
+        for ii, (imgs, sizes, gt_bboxes_, gt_labels_, gt_difficults_) in tqdm(enumerate(dataloader)):
+            gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = gt_convert(gt_bboxes_, gt_labels_, 448, 448, 14, 14)
+            net_result = self(t.from_numpy(img).unsqueeze(0).cuda().float())
+            for i_x in range(14):
+                for i_y in range(14):
+                    if [i_x, i_y] in gt_cs.tolist(): 
+                        loss_center += (net_result[i_x, i_y, 2, 0] - 1) ** 2
+                    else:
+                        loss_center += net_result[i_x, i_y, 2, 0] ** 2
+        print(loss_center)
         
+
     def predict(self, imgs, sizes=None, visualize=False):
         bboxes = list()
         labels = list()

@@ -21,7 +21,8 @@ LossTuple = namedtuple('LossTuple',
                         'pt_link_loss',
                         'pt_loss',
                         'nopt_loss',
-                        'add_pexist_nopt_loss', 
+                        'add_pexist_nopt_loss',
+                        'center_exist_loss', 
                         'total_loss',
                         ])
 
@@ -142,22 +143,39 @@ class PointLinkTrainer(nn.Module):
         loss4 = 0
         loss_pt = 0
         loss_nopt = 0
+        center_exist_loss = 0
         gt_point = np.zeros((448, 448, 3), np.int32)
         predict_exist = np.zeros((3, 448, 448), np.int32)
         gt_point.fill(255)
         predict_exist.fill(255)
+
+        gt_center = np.zeros((3, 448, 448), np.int32)
+        center_exist = np.zeros((3, 448, 448), np.int32)
+        gt_center.fill(255)
+        center_exist.fill(255)
         
         for i_x in range(14):
             for i_y in range(14):
-                predict_exist[0][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 50 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
-                predict_exist[1][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 50 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
-                predict_exist[2][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 50 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
+                predict_exist[0][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 255 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
+                predict_exist[1][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 255 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
+                predict_exist[2][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 255 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
         #predict_exist[0] = out_four[0][:, :, 0, 0].detach().numpy()
         #predict_exist[1] = out_four[0][:, :, 0, 0].detach().numpy()
         #predict_exist[2] = out_four[0][:, :, 0, 0].detach().numpy()
         predict_exist[0][0*32: 0*32+32, 0*32: 0*32+32] = 1
         predict_exist[1][0*32: 0*32+32, 0*32: 0*32+32] = 1
         predict_exist[2][0*32: 0*32+32, 0*32: 0*32+32] = 1
+
+        for i_x in range(14):
+            for i_y in range(14):
+                center_exist[0][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 255 * out_four.detach().numpy()[0][i_x, i_y, 2, 0]
+                center_exist[1][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 255 * out_four.detach().numpy()[0][i_x, i_y, 2, 0]
+                center_exist[2][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 255 * out_four.detach().numpy()[0][i_x, i_y, 2, 0]
+
+        center_exist[0][0*32: 0*32+32, 0*32: 0*32+32] = 1
+        center_exist[1][0*32: 0*32+32, 0*32: 0*32+32] = 1
+        center_exist[2][0*32: 0*32+32, 0*32: 0*32+32] = 1
+ 
         for direction in range(1):
             out = out_four[direction]
             for i_x in range(14):
@@ -166,7 +184,6 @@ class PointLinkTrainer(nn.Module):
                         if j < self.B:
                             if [i_x, i_y] in gt_ps[:, direction].tolist():
                                 gt_point[i_x*32: i_x*32+32, i_y*32: i_y*32+32, :] = 0
-                                                        
                                 index_tup = np.where(gt_ps[:, direction] == [i_x, i_y])
                                 which = index_tup[0][0]
                                 x_ij, y_ij = gt_ps_d[which][direction] 
@@ -188,11 +205,13 @@ class PointLinkTrainer(nn.Module):
                             else:
                                 loss_nopt += out[i_x, i_y, j, 0] ** 2
                         if j >= self.B:
-                            if [i_x, i_y] in gt_ps[:, direction].tolist():
-                                index_tup = np.where(gt_ps[:, direction] == [i_x, i_y])
+                            if [i_x, i_y] in gt_cs.tolist():
+                                gt_center[:, i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 0
+                                index_tup = np.where(gt_cs.numpy() == [i_x, i_y])
                                 which = index_tup[0][0]
                                 x_ij, y_ij = gt_cs_d[which]
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
+                                center_exist_loss += (out[i_x, i_y, 2, 0] - 1) ** 2
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
                                 loss3 += self.w_coord * self.mse_loss(
@@ -205,22 +224,21 @@ class PointLinkTrainer(nn.Module):
                                         gt_linkcs_y[which])
                             else:
                                 loss_nopt += out[i_x, i_y, j, 0] ** 2
+                                center_exist_loss += self.w_nopt * out[i_x, i_y, 2, 0] ** 2
         loss_pt = loss1 + loss2 + loss3 + loss4
         total_loss = self.w_pt * loss_pt + self.w_nopt * loss_nopt
-        losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, loss1 + self.w_nopt * loss_nopt, total_loss]
+        losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, loss1 + self.w_nopt * loss_nopt, center_exist_loss, total_loss]
         #print("losses:  ", losses)
         gt_point = gt_point.transpose([2, 0, 1])
-        print("predict_exist shape:", predict_exist.shape)
         #predict_exist = predict_exist.transpose([0, 2, 0])
         predict_exist = 255 - predict_exist*255
-        print("predict_exist shape:", type(predict_exist))
+        center_exist = 255 - center_exist*255
         #print(gt_grid.shape)
         #print("get_grid_type:", type(gt_grid[i]))
-        print(opt.env)
         self.vis.img('gt_point', gt_point)
-        print("final predict_exist shape:", predict_exist.shape)
-        print("final gt_point shape:", gt_point.shape)
-        self.vis.img('predict_exist', predict_exist)
+        self.vis.img('predict_left_top_exist', predict_exist)
+        self.vis.img('gt_center', gt_center)
+        self.vis.img('predict_center', center_exist)
         return LossTuple(*losses)
 
     def check_loss(self, out_four, bboxes, labels, H, W):
@@ -247,7 +265,8 @@ class PointLinkTrainer(nn.Module):
         losses = self.forward(imgs, bboxes, labels)
         #print("========losses.total_loss===========")
         #print(losses.total_loss)
-        losses.add_pexist_nopt_loss.backward()
+        #losses.add_pexist_nopt_loss.backward()
+        losses.center_exist_loss.backward()
         self.optimizer.step()
         self.update_meters(losses)
 

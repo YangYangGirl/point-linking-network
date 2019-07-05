@@ -80,7 +80,7 @@ def train(**kwargs):
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             trainer.train_step(img, bbox, label)
-
+                
             if (ii + 1) % opt.plot_every == 0:
                 if os.path.exists(opt.debug_file):
                     ipdb.set_trace()
@@ -88,7 +88,7 @@ def train(**kwargs):
                 # plot loss 
                 #print("meter", trainer.get_meter_data())
                 trainer.vis.plot_many(trainer.get_meter_data())
-
+                trainer.vis.plot({"eval_center": point_link.eval_center})
                 # plot groud truth bboxes
                 ori_img_ = inverse_normalize(at.tonumpy(img[0]))
                 gt_img = visdom_bbox(ori_img_,
@@ -107,7 +107,7 @@ def train(**kwargs):
                     pred_img = vis_image(ori_img_)
                 trainer.vis.img('pred_img', pred_img)'''
         print("begin eval")
-        eval_result = eval(test_dataloader, point_link, test_num=5)
+        '''eval_result = eval(test_dataloader, point_link, test_num=5)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.point_link.optimizer.param_groups[0]['lr']
         log_info = 'lr:{}, map:{},loss:{}'.format(str(lr_),
@@ -130,7 +130,8 @@ def train(**kwargs):
 
         if epoch == 13:
             break
-
+        '''
+        print(epoch)
 
 if __name__ == '__main__':
     import fire
