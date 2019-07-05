@@ -26,7 +26,7 @@ class Config:
 
     # visualization
     env = 'poink-link'  # visdom env
-    port = 8097
+    port = 2333
     plot_every = 40  # vis every N iter
 
     # preset

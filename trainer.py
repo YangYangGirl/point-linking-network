@@ -12,6 +12,8 @@ from utils.config import opt
 from utils.vis_tool import Visualizer
 from torchnet.meter import ConfusionMeter, AverageValueMeter
 
+from data.dataset import inverse_normalize
+from utils.vis_tool import visdom_bbox
 LossTuple = namedtuple('LossTuple',
                        ['pt_pexist_loss',
                         'pt_cls_loss',
@@ -19,6 +21,7 @@ LossTuple = namedtuple('LossTuple',
                         'pt_link_loss',
                         'pt_loss',
                         'nopt_loss',
+                        'add_pexist_nopt_loss', 
                         'total_loss',
                         ])
 
@@ -72,7 +75,6 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
         gt_cs.append(xc_)
         gt_cs_d.append([xc_d, yc_d])
         gt_label = np.zeros((classes)).tolist()
-        print("labels[0][which]", labels[0][which])
         gt_label[labels[0][which]] = 1
         gt_labels.append(gt_label)
 
@@ -90,7 +92,7 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
             gt_linkp_y[i][p[1]] = 1
         gt_linkps_x.append(gt_linkp_x)
         gt_linkps_y.append(gt_linkp_y)
-   
+        
     return np.array(gt_ps), t.Tensor(gt_ps_d), t.Tensor(gt_cs), t.Tensor(gt_cs_d), t.Tensor(gt_labels), t.Tensor(gt_linkcs_x), t.Tensor(gt_linkcs_y), t.Tensor(gt_linkps_x), t.Tensor(gt_linkps_y)
 
 
@@ -129,6 +131,10 @@ class PointLinkTrainer(nn.Module):
         loss = t.empty(4)
         gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = \
             gt_convert(bboxes, labels, H, W, self.grid_size, self.classes)
+        #if len(bboxes[0])<3:
+            #print("bboxes, labels", bboxes, labels)
+            #print("gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels", gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels)
+        
         total_loss = 0
         loss1 = 0
         loss2 = 0
@@ -136,21 +142,41 @@ class PointLinkTrainer(nn.Module):
         loss4 = 0
         loss_pt = 0
         loss_nopt = 0
+        gt_point = np.zeros((448, 448, 3), np.int32)
+        predict_exist = np.zeros((3, 448, 448), np.int32)
+        gt_point.fill(255)
+        predict_exist.fill(255)
         
-        for direction in range(4):
+        for i_x in range(14):
+            for i_y in range(14):
+                predict_exist[0][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 50 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
+                predict_exist[1][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 50 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
+                predict_exist[2][i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 50 * out_four.detach().numpy()[0][i_x, i_y, 0, 0]
+        #predict_exist[0] = out_four[0][:, :, 0, 0].detach().numpy()
+        #predict_exist[1] = out_four[0][:, :, 0, 0].detach().numpy()
+        #predict_exist[2] = out_four[0][:, :, 0, 0].detach().numpy()
+        predict_exist[0][0*32: 0*32+32, 0*32: 0*32+32] = 1
+        predict_exist[1][0*32: 0*32+32, 0*32: 0*32+32] = 1
+        predict_exist[2][0*32: 0*32+32, 0*32: 0*32+32] = 1
+        for direction in range(1):
             out = out_four[direction]
             for i_x in range(14):
                 for i_y in range(14):
                     for j in range(2 * self.B):
                         if j < self.B:
                             if [i_x, i_y] in gt_ps[:, direction].tolist():
+                                gt_point[i_x*32: i_x*32+32, i_y*32: i_y*32+32, :] = 0
+                                                        
                                 index_tup = np.where(gt_ps[:, direction] == [i_x, i_y])
                                 which = index_tup[0][0]
                                 x_ij, y_ij = gt_ps_d[which][direction] 
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
-                                print([out[i_x, i_y, j, 1: 1 + self.classes], gt_labels[which], "check label"])
+                                #print("====== check ====")
+                                #print("[i_x, i_y]", [i_x, i_y], which, [out[i_x, i_y, j, 1: 1 + self.classes], gt_labels[which], "check label"])
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
+                                #print("loss2", self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
+                                                                     #gt_labels[which]))
                                 loss3 += self.w_coord * self.mse_loss(
                                     out[i_x, i_y, j, 1 + self.classes: 3 + self.classes], gt_ps_d[which][direction])
                                 loss4 += self.w_link * self.mse_loss(
@@ -181,12 +207,33 @@ class PointLinkTrainer(nn.Module):
                                 loss_nopt += out[i_x, i_y, j, 0] ** 2
         loss_pt = loss1 + loss2 + loss3 + loss4
         total_loss = self.w_pt * loss_pt + self.w_nopt * loss_nopt
-        losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, total_loss]
-        print("losses:  ", losses)
-        return LossTuple(*losses) 
+        losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, loss1 + self.w_nopt * loss_nopt, total_loss]
+        #print("losses:  ", losses)
+        gt_point = gt_point.transpose([2, 0, 1])
+        print("predict_exist shape:", predict_exist.shape)
+        #predict_exist = predict_exist.transpose([0, 2, 0])
+        predict_exist = 255 - predict_exist*255
+        print("predict_exist shape:", type(predict_exist))
+        #print(gt_grid.shape)
+        #print("get_grid_type:", type(gt_grid[i]))
+        print(opt.env)
+        self.vis.img('gt_point', gt_point)
+        print("final predict_exist shape:", predict_exist.shape)
+        print("final gt_point shape:", gt_point.shape)
+        self.vis.img('predict_exist', predict_exist)
+        return LossTuple(*losses)
 
+    def check_loss(self, out_four, bboxes, labels, H, W):
+        gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = \
+            gt_convert(bboxes, labels, H, W, self.grid_size, self.classes)
+        return 
 
     def forward(self, imgs, bboxes, labels):
+        train_gt_img = visdom_bbox(inverse_normalize(at.tonumpy(imgs[0])),
+                                     at.tonumpy(bboxes[0]),
+                                     at.tonumpy(labels[0]))
+        #print(train_gt_img.shape)
+        self.vis.img('train_gt_img', train_gt_img)
         _, _, H, W = imgs.shape
         img_size = (H, W)
         out_four = self.point_link(imgs)
@@ -200,7 +247,7 @@ class PointLinkTrainer(nn.Module):
         losses = self.forward(imgs, bboxes, labels)
         #print("========losses.total_loss===========")
         #print(losses.total_loss)
-        losses.total_loss.backward()
+        losses.add_pexist_nopt_loss.backward()
         self.optimizer.step()
         self.update_meters(losses)
 

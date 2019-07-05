@@ -48,7 +48,8 @@ def eval(dataloader, point_link, test_num=1000):
 
 def train(**kwargs):
     opt._parse(kwargs)
-
+    print("======!!========")
+    print(kwargs)
     dataset = Dataset(opt)
     print('load data')
     dataloader = data_.DataLoader(dataset, \
@@ -75,7 +76,7 @@ def train(**kwargs):
     for epoch in range(opt.epoch):
         trainer.reset_meters()
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
-            print("label_", label_)
+            #print("label_", label_)
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             trainer.train_step(img, bbox, label)
@@ -85,7 +86,7 @@ def train(**kwargs):
                     ipdb.set_trace()
 
                 # plot loss 
-                print("meter", trainer.get_meter_data())
+                #print("meter", trainer.get_meter_data())
                 trainer.vis.plot_many(trainer.get_meter_data())
 
                 # plot groud truth bboxes
