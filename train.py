@@ -88,14 +88,13 @@ def train(**kwargs):
                 # plot loss 
                 #print("meter", trainer.get_meter_data())
                 trainer.vis.plot_many(trainer.get_meter_data())
-                trainer.vis.plot({"eval_center": point_link.eval_center})
                 # plot groud truth bboxes
                 ori_img_ = inverse_normalize(at.tonumpy(img[0]))
                 gt_img = visdom_bbox(ori_img_,
                                      at.tonumpy(bbox_[0]),
                                      at.tonumpy(label_[0]))
                 trainer.vis.img('gt_img', gt_img)
-
+                trainer.vis.plot({"eval_center": point_link.eval_center(test_dataloader).float()})
                 # plot predicti bboxes
                 '''_bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
                 if _bboxes is not None:

@@ -3,6 +3,7 @@ from __future__ import division
 import torch as t
 import numpy as np
 import cupy as cp
+from data import util
 from utils import array_tool as at
 from model.utils.bbox_tools import loc2bbox
 from model.utils.nms import non_maximum_suppression
@@ -11,7 +12,7 @@ from torch import nn
 from data.dataset import preprocess
 from torch.nn import functional as F
 from utils.config import opt
-
+from trainer import gt_convert
 class BasicConv2d(nn.Module):
 
     def __init__(self, in_planes, out_planes, kernel_size, stride, padding=0):
@@ -144,13 +145,16 @@ class Point_Linking(nn.Module):
         y_area = [[0, b], [0, b], [b+1, self.grid_size], [b+1, self.grid_size]]
         return x_area, y_area
 
-    def eval_center(self, imgs, sizes=None, visualize=True):
+    def eval_center(self, dataloader, sizes=None, visualize=True):
         pred_centers = list() 
         gt_bboxes = list()
         loss_center = 0
-        for ii, (imgs, sizes, gt_bboxes_, gt_labels_, gt_difficults_) in tqdm(enumerate(dataloader)):
-            gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = gt_convert(gt_bboxes_, gt_labels_, 448, 448, 14, 14)
-            net_result = self(t.from_numpy(img).unsqueeze(0).cuda().float())
+        for ii, (imgs, sizes, gt_bboxes_, gt_labels_, gt_difficults_) in enumerate(dataloader):
+            sizes = np.array(sizes).tolist()
+            in_size = (sizes[0], sizes[1])
+            gt_bboxes_ = util.resize_bbox(gt_bboxes_[0].numpy(), in_size, (448, 448))
+            gt_ps, gt_ps_d, gt_cs, gt_cs_d, gt_labels, gt_linkcs_x, gt_linkcs_y, gt_linkps_x, gt_linkps_y = gt_convert(t.from_numpy(gt_bboxes_).unsqueeze(0), gt_labels_, 448, 448, 14, 20)
+            net_result = self(imgs.cuda().float())[0]
             for i_x in range(14):
                 for i_y in range(14):
                     if [i_x, i_y] in gt_cs.tolist(): 

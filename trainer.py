@@ -41,6 +41,7 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
     bboxes = bboxes / W * (grid_size-1)
     bboxes = bboxes[0]
     for which, b in enumerate(bboxes):
+        print("b[0]", b[0])
         x0 = int(b[0])
         y0 = int(b[1])
         x0_d = b[0] - x0
@@ -76,6 +77,10 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
         gt_cs.append(xc_)
         gt_cs_d.append([xc_d, yc_d])
         gt_label = np.zeros((classes)).tolist()
+        print(labels.shape)
+        print("which", which)
+        print(labels[0][which])
+        print(len(gt_label))
         gt_label[labels[0][which]] = 1
         gt_labels.append(gt_label)
 
