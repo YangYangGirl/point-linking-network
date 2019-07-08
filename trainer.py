@@ -41,7 +41,6 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
     bboxes = bboxes / W * (grid_size-1)
     bboxes = bboxes[0]
     for which, b in enumerate(bboxes):
-        print("b[0]", b[0])
         x0 = int(b[0])
         y0 = int(b[1])
         x0_d = b[0] - x0
@@ -77,10 +76,6 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
         gt_cs.append(xc_)
         gt_cs_d.append([xc_d, yc_d])
         gt_label = np.zeros((classes)).tolist()
-        print(labels.shape)
-        print("which", which)
-        print(labels[0][which])
-        print(len(gt_label))
         gt_label[labels[0][which]] = 1
         gt_labels.append(gt_label)
 
@@ -181,7 +176,7 @@ class PointLinkTrainer(nn.Module):
         center_exist[1][0*32: 0*32+32, 0*32: 0*32+32] = 1
         center_exist[2][0*32: 0*32+32, 0*32: 0*32+32] = 1
  
-        for direction in range(1):
+        for direction in range(4):
             out = out_four[direction]
             for i_x in range(14):
                 for i_y in range(14):
@@ -270,8 +265,9 @@ class PointLinkTrainer(nn.Module):
         losses = self.forward(imgs, bboxes, labels)
         #print("========losses.total_loss===========")
         #print(losses.total_loss)
+        losses.pt_link_loss.backward()
         #losses.add_pexist_nopt_loss.backward()
-        losses.center_exist_loss.backward()
+        #losses.center_exist_loss.backward()
         self.optimizer.step()
         self.update_meters(losses)
 
@@ -328,6 +324,7 @@ class PointLinkTrainer(nn.Module):
     def load(self, path, load_optimizer=True, parse_opt=False, ):
         state_dict = t.load(path)
         if 'model' in state_dict:
+            print("load model")
             self.point_link.load_state_dict(state_dict['model'])
         else:  # legacy way, for backward compatibility
             self.point_link.load_state_dict(state_dict)

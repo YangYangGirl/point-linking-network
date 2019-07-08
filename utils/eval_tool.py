@@ -164,9 +164,6 @@ def calc_detection_voc_prec_rec(
             gt_difficult = np.zeros(gt_bbox.shape[0], dtype=bool)
 
         for l in np.unique(np.concatenate((pred_label, gt_label)).astype(int)):
-            print("===pred_label======l========")
-            print(pred_label)
-            print(l)
             pred_mask_l = pred_label == l
             pred_bbox_l = pred_bbox[pred_mask_l]
             pred_score_l = pred_score[pred_mask_l]

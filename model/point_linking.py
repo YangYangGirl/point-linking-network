@@ -128,6 +128,29 @@ class Point_Linking(nn.Module):
         # Calculate offsets for each grid
         self.grid_x = t.arange(g).repeat(g, 1).view([1, 1, g, g]).type(FloatTensor)
         self.grid_y = t.arange(g).repeat(g, 1).t().view([1, 1, g, g]).type(FloatTensor)
+
+    def _suppress(self, raw_cls_bbox, raw_prob):
+        bbox = list()
+        label = list()
+        score = list()
+        # skip cls_id = 0 because it is the background class
+        for l in range(1, self.n_class):
+            cls_bbox_l = raw_cls_bbox.reshape((-1, self.n_class, 4))[:, l, :]
+            prob_l = raw_prob[:, l]
+            mask = prob_l > self.score_thresh
+            cls_bbox_l = cls_bbox_l[mask]
+            prob_l = prob_l[mask]
+            keep = non_maximum_suppression(
+                cp.array(cls_bbox_l), self.nms_thresh, prob_l)
+            keep = cp.asnumpy(keep)
+            bbox.append(cls_bbox_l[keep])
+            # The labels are in [0, self.n_class - 2].
+            label.append((l - 1) * np.ones((len(keep),)))
+            score.append(prob_l[keep])
+        bbox = np.concatenate(bbox, axis=0).astype(np.float32)
+        label = np.concatenate(label, axis=0).astype(np.int32)
+        score = np.concatenate(score, axis=0).astype(np.float32)
+        return bbox, label, score
         
     def n_class(self):
         # Total number of classes including the background.
@@ -190,18 +213,23 @@ class Point_Linking(nn.Module):
             bboxes_ = list()
             labels_ = list()
             scores_ = list()
+            '''print("img.shape", img.shape)
+            print("size", size)
+            scale = img.shape[3] / size[1]    #fit to raw image
+            print("scale", scale)
+            print("img.shape[3], size[1]", img.shape[3], size[1]) '''
             four_out = self(t.from_numpy(img).unsqueeze(0).cuda().float())
             for i in range(self.B):
                 out_p = four_out[direction]#.reshape([self.grid_size,self.grid_size, 2 * self.B, 51])
                 out_c = four_out[direction]#.reshape([self.grid_size, self.grid_size, 2 * self.B, 51])
                 for b in range(self.grid_size):
                     for a in range(self.grid_size):
-                        if out_c[a, b, i+self.B, 0] < 0.1: continue 
+                        if out_c[a, b, i+self.B, 0] < 0.5: continue 
                         x_area, y_area = self.compute_area(a, b)
-                        for n in range(y_area[i][0], y_area[i][1]):
-                            for m in range(x_area[i][0], x_area[i][1]):
+                        for n in range(y_area[direction][0], y_area[direction][1]):
+                            for m in range(x_area[direction][0], x_area[direction][1]):
                                 for c in range(self.classes):
-                                    p_mn = out_p[m, n, i, 0]        #(m, n) center point; (a, b) point
+                                    p_mn = out_p[m, n, i, 0]        #(a, b) center point; (m, n) point
                                     p_ab = out_c[a, b, i+self.B, 0]
                                     q_cmn = out_p[m, n, i, 1+c]
                                     q_cab = out_c[a, b, i+self.B, 1+c]
@@ -213,13 +241,20 @@ class Point_Linking(nn.Module):
                                     score = p_mn*p_ab*q_cmn*q_cab*(l_mn_a*l_mn_b+l_ab_m*l_ab_n)/2
                                     #print(p_mn, p_ab, q_cmn, q_cab, l_mn_a, l_mn_b, l_ab_m, l_ab_n)
                                     #print(score)
-                                    if score > 0.3:
-                                        results.append([m, n, a, b, c, score])
+                                    m_ , n_, a_, b_ = out_p[m, n, i, 21], out_p[m, n, i, 22], out_c[a, b, i+self.B, 21], out_c[a, b, i+self.B, 22]
+                                    if score > 1e-3:
+                                        #print([a, b, m, n, c, score])
+                                        #print([a_, b_, m_, n_, c, score])
+                                        results.append([a+a_, b+b_, m+m_, n+n_, c, score])
                 for p in results: 
-                    bbox = [p[0], p[1], 2*p[2]-p[0], 2*p[3] - p[1]]
+                    #bbox = [p[0], p[1], 2*p[2]-p[0], 2*p[3] - p[1]]
+                    bbox = [p[3], p[2], 2*p[1]-p[3], 2*p[0]-p[2]]
+                    #print(bbox)
+                    bbox = [b * 32 for b in bbox] 
                     bboxes_.append(bbox)
                     labels_.append(p[4])
-                    scores_.append(p[5])  #result of a img
+                    scores_.append(p[5]*1000)  #result of a img
+            #bboxes_nms = self._suppress(bboxes_, scores_)
             bboxes.append(np.array(bboxes_))
             labels.append(np.array(labels_))
             scores.append(np.array(scores_))

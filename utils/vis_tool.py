@@ -10,8 +10,10 @@ from matplotlib import pyplot as plot
 
 # from data.voc_dataset import VOC_BBOX_LABEL_NAMES
 
-
-VOC_BBOX_LABEL_NAMES = (
+VOC_BBOX_LABEL_NAMES = ("aeroplane", "bicycle", "bird", "boat", "bottle", "bus",
+ "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike",
+ "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor")
+'''VOC_BBOX_LABEL_NAMES = (
     'fly',
     'bike',
     'bird',
@@ -33,7 +35,7 @@ VOC_BBOX_LABEL_NAMES = (
     'train',
     'tv',
 )
-
+'''
 
 def vis_image(img, ax=None):
     """Visualize a color image.
