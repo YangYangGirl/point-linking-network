@@ -77,12 +77,9 @@ def train(**kwargs):
         trainer.reset_meters()
         print("shape of dataloader", len(dataloader))
         for ii, (img, bbox_, label_, scale) in tqdm(enumerate(dataloader)):
-            print("====== yy =======")
-  
             scale = at.scalar(scale)
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             trainer.train_step(img, bbox, label)
-                
             if (ii + 1) % opt.plot_every == 0:
                 if os.path.exists(opt.debug_file):
                     ipdb.set_trace()
@@ -97,7 +94,7 @@ def train(**kwargs):
                                      at.tonumpy(label_[0]))
                 trainer.vis.img('gt_img', gt_img)
                 # plot predicti bboxes
-                _bboxes, _labels, _scores = trainer.point_link.predict([ori_img_], visualize=True)
+                _bboxes, _labels, _scores = trainer.point_link.predict_center([ori_img_], visualize=True)
                 if _bboxes is not None:
                     pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),
@@ -106,7 +103,7 @@ def train(**kwargs):
                 else:
                     pred_img = vis_image(ori_img_)
                 trainer.vis.img('pred_img', pred_img)
-        print("begin eval")
+        '''print("begin eval")
         eval_result = eval(test_dataloader, point_link, test_num=60)
         trainer.vis.plot('test_map', eval_result['map'])
         lr_ = trainer.point_link.optimizer.param_groups[0]['lr']
@@ -126,8 +123,8 @@ def train(**kwargs):
         if epoch == 4:
             trainer.load(best_path)
             trainer.point_link.scale_lr(opt.lr_decay)
-            lr_ = lr_ * opt.lr_decay
-
+            lr_ = lr_ * opt.lr_decay'''
+        trainer.save({"epoch": epoch})
         if epoch == 13:
             break
         

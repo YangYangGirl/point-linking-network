@@ -181,7 +181,7 @@ class PointLinkTrainer(nn.Module):
             for i_x in range(14):
                 for i_y in range(14):
                     for j in range(2 * self.B):
-                        if j < self.B:
+                        if j < self.B:  #point
                             if [i_x, i_y] in gt_ps[:, direction].tolist():
                                 gt_point[i_x*32: i_x*32+32, i_y*32: i_y*32+32, :] = 0
                                 index_tup = np.where(gt_ps[:, direction] == [i_x, i_y])
@@ -204,7 +204,7 @@ class PointLinkTrainer(nn.Module):
                                         gt_linkcs_y[which])
                             else:
                                 loss_nopt += out[i_x, i_y, j, 0] ** 2
-                        if j >= self.B:
+                        if j >= self.B:   #center point
                             if [i_x, i_y] in gt_cs.tolist():
                                 gt_center[:, i_x*32: i_x*32+32, i_y*32: i_y*32+32] = 0
                                 index_tup = np.where(gt_cs.numpy() == [i_x, i_y])
@@ -212,6 +212,8 @@ class PointLinkTrainer(nn.Module):
                                 x_ij, y_ij = gt_cs_d[which]
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
                                 center_exist_loss += (out[i_x, i_y, 2, 0] - 1) ** 2
+                                center_exist_loss += self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
+                                                                     gt_labels[which])
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
                                 loss3 += self.w_coord * self.mse_loss(
@@ -235,7 +237,7 @@ class PointLinkTrainer(nn.Module):
         center_exist = 255 - center_exist*255
         #print(gt_grid.shape)
         #print("get_grid_type:", type(gt_grid[i]))
-        self.vis.img('gt_point', gt_point)
+        self.vis.img('gt_point', gt_point)   #change to (3, 448, 448)
         self.vis.img('predict_left_top_exist', predict_exist)
         self.vis.img('gt_center', gt_center)
         self.vis.img('predict_center', center_exist)
@@ -265,7 +267,8 @@ class PointLinkTrainer(nn.Module):
         losses = self.forward(imgs, bboxes, labels)
         #print("========losses.total_loss===========")
         #print(losses.total_loss)
-        losses.pt_link_loss.backward()
+        losses.center_exist_loss.backward()
+        #losses.pt_link_loss.backward()
         #losses.add_pexist_nopt_loss.backward()
         #losses.center_exist_loss.backward()
         self.optimizer.step()
@@ -297,7 +300,7 @@ class PointLinkTrainer(nn.Module):
 
         if save_path is None:
             timestr = time.strftime('%m%d%H%M')
-            save_path = 'checkpoints/pointlink_%s' % timestr
+            save_path = 'checkpoints/train_center/pointlink_%s' % timestr
             for k_, v_ in kwargs.items():
                 save_path += '_%s' % v_
 
