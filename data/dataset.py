@@ -105,18 +105,22 @@ class Transform(object):
 
     def __call__(self, in_data):
         img, bbox, label = in_data
+        #print("===============================")
+        #print("raw img shape", img.shape, img)
+        #print("raw bbox shape", bbox.shape, bbox)
+      
         _, H, W = img.shape
         img = preprocess(img, self.min_size, self.max_size)
         _, o_H, o_W = img.shape
         scale = o_H / H
         bbox = util.resize_bbox(bbox, (H, W), (o_H, o_W))
-
+        #print("bbox after resize", bbox)
         # horizontally flip
-        img, params = util.random_flip(
+        '''img, params = util.random_flip(
             img, x_random=True, return_param=True)
         bbox = util.flip_bbox(
             bbox, (o_H, o_W), x_flip=params['x_flip'])
-
+        print("bbox after flip", bbox)'''
         return img, bbox, label, scale
 
 
@@ -132,6 +136,7 @@ class Dataset:
         img, bbox, label, scale = self.tsf((ori_img, bbox, label))
         # TODO: check whose stride is negative to fix this instead copy all
         # some of the strides of a given numpy array are negative.
+        #print("after tsf bbox", bbox)
         return img.copy(), bbox.copy(), label.copy(), scale
 
     def __len__(self):

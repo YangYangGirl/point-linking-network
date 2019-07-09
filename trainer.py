@@ -37,10 +37,11 @@ def gt_convert(bboxes, labels, H, W, grid_size, classes):
     gt_linkcs_y = list()
     gt_linkps_x = list()
     gt_linkps_y = list()  
-  
-    bboxes = bboxes / W * (grid_size-1)
+    #print(bboxes) 
+    bboxes = bboxes / W * grid_size
     bboxes = bboxes[0]
     for which, b in enumerate(bboxes):
+        #print(b)
         x0 = int(b[0])
         y0 = int(b[1])
         x0_d = b[0] - x0
@@ -211,7 +212,7 @@ class PointLinkTrainer(nn.Module):
                                 which = index_tup[0][0]
                                 x_ij, y_ij = gt_cs_d[which]
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
-                                center_exist_loss += (out[i_x, i_y, 2, 0] - 1) ** 2
+                                #center_exist_loss += (out[i_x, i_y, 2, 0] - 1) ** 2
                                 center_exist_loss += self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
@@ -257,14 +258,16 @@ class PointLinkTrainer(nn.Module):
         _, _, H, W = imgs.shape
         img_size = (H, W)
         out_four = self.point_link(imgs)
-
+        #print("bbox in forward", bboxes)
         loss = self.compute_loss(out_four, bboxes, labels, H, W)
 
         return loss
 
     def train_step(self, imgs, bboxes, labels):
         self.optimizer.zero_grad()
+        
         losses = self.forward(imgs, bboxes, labels)
+        #print("bbox in train_step", bboxes.shape, bboxes)
         #print("========losses.total_loss===========")
         #print(losses.total_loss)
         losses.center_exist_loss.backward()
@@ -300,7 +303,7 @@ class PointLinkTrainer(nn.Module):
 
         if save_path is None:
             timestr = time.strftime('%m%d%H%M')
-            save_path = 'checkpoints/train_center/pointlink_%s' % timestr
+            save_path = 'checkpoints/train_center/dila_pointlink_%s' % timestr
             for k_, v_ in kwargs.items():
                 save_path += '_%s' % v_
 
