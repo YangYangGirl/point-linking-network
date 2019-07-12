@@ -84,7 +84,6 @@ def train(**kwargs):
             img, bbox, label = img.cuda().float(), bbox_.cuda(), label_.cuda()
             #print("bbox before train_step", bbox.shape, bbox)
             trainer.train_step(img, bbox, label)
-            
             if (ii + 1) % opt.plot_every == 0:
                 if os.path.exists(opt.debug_file):
                     ipdb.set_trace()
@@ -99,7 +98,7 @@ def train(**kwargs):
                                      at.tonumpy(label_[0]))
                 trainer.vis.img('gt_img', gt_img)
                 # plot predicti bboxes
-                _bboxes, _labels, _scores = trainer.point_link.predict_center_exist([ori_img_], visualize=True)
+                _bboxes, _labels, _scores = trainer.point_link.predict_center_offset_and_exist([ori_img_], visualize=True)
                 if _bboxes is not None:
                     pred_img = visdom_bbox(ori_img_,
                                        at.tonumpy(_bboxes[0]),

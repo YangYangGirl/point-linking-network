@@ -22,7 +22,10 @@ LossTuple = namedtuple('LossTuple',
                         'pt_loss',
                         'nopt_loss',
                         'add_pexist_nopt_loss',
-                        'center_exist_loss', 
+                        'center_exist_loss',
+                        'center_pt_loss',
+                        'center_nopt_loss',
+                        'center_offset_loss', 
                         'total_loss',
                         ])
 
@@ -106,14 +109,14 @@ class PointLinkTrainer(nn.Module):
         self.grid_size = 14
         self.B = 2
         self.optimizer = self.point_link.get_optimizer()
-        self.mse_loss = nn.MSELoss(size_average = False)
+        self.mse_loss = nn.MSELoss(reduction='sum')
         self.cls_loss = nn.CrossEntropyLoss()
         self.classes = 20
         self.w_class = 1
         self.w_coord = 5
         self.w_link = 1
         self.w_pt = 1
-        self.w_nopt = 0.3
+        self.w_nopt = 0.05
         self.meters = {k: AverageValueMeter() for k in LossTuple._fields}
         self.vis = Visualizer(env=opt.env)
 
@@ -145,6 +148,9 @@ class PointLinkTrainer(nn.Module):
         loss_pt = 0
         loss_nopt = 0
         center_exist_loss = 0
+        center_pt_loss = 0
+        center_nopt_loss = 0
+        center_offset_loss = 0
         gt_point = np.zeros((448, 448, 3), np.int32)
         predict_exist = np.zeros((3, 448, 448), np.int32)
         gt_point.fill(255)
@@ -212,11 +218,16 @@ class PointLinkTrainer(nn.Module):
                                 which = index_tup[0][0]
                                 x_ij, y_ij = gt_cs_d[which]
                                 loss1 += (out[i_x, i_y, j, 0] - 1) ** 2
-                                #center_exist_loss += (out[i_x, i_y, 2, 0] - 1) ** 2
-                                center_exist_loss += self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
-                                                                     gt_labels[which])
+                                center_exist_loss += (out[i_x, i_y, 2, 0] - 1) ** 2
+                                center_pt_loss += (out[i_x, i_y, 2, 0] - 1) ** 2
+                                #center_exist_loss += self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
+                                                                     #gt_labels[which])
                                 loss2 += self.w_class * self.mse_loss(out[i_x, i_y, j, 1: 1 + self.classes],
                                                                      gt_labels[which])
+                                center_offset_loss += self.w_coord * self.mse_loss(
+                                    out[i_x, i_y, 2, 1 + self.classes: 3 + self.classes], gt_cs_d[which])
+                                center_exist_loss += self.w_coord * self.mse_loss(
+                                    out[i_x, i_y, 2, 1 + self.classes: 3 + self.classes], gt_cs_d[which])
                                 loss3 += self.w_coord * self.mse_loss(
                                     out[i_x, i_y, j, 1 + self.classes: 3 + self.classes], gt_cs_d[which])
                                 loss4 += self.w_link * self.mse_loss(
@@ -226,11 +237,12 @@ class PointLinkTrainer(nn.Module):
                                         out[i_x, i_y, j, 3 + self.classes + self.grid_size: 3 + self.classes + 2 * self.grid_size],
                                         gt_linkcs_y[which])
                             else:
-                                loss_nopt += out[i_x, i_y, j, 0] ** 2
+                                loss_nopt += out[i_x, i_y, 2, 0] ** 2
+                                center_nopt_loss += out[i_x, i_y, 2, 0] ** 2
                                 center_exist_loss += self.w_nopt * out[i_x, i_y, 2, 0] ** 2
         loss_pt = loss1 + loss2 + loss3 + loss4
         total_loss = self.w_pt * loss_pt + self.w_nopt * loss_nopt
-        losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, loss1 + self.w_nopt * loss_nopt, center_exist_loss, total_loss]
+        losses = [loss1, loss2, loss3, loss4, loss_pt, loss_nopt, loss1 + self.w_nopt * loss_nopt, center_exist_loss, center_pt_loss, center_nopt_loss, center_offset_loss, total_loss]
         #print("losses:  ", losses)
         gt_point = gt_point.transpose([2, 0, 1])
         #predict_exist = predict_exist.transpose([0, 2, 0])
@@ -303,7 +315,7 @@ class PointLinkTrainer(nn.Module):
 
         if save_path is None:
             timestr = time.strftime('%m%d%H%M')
-            save_path = 'checkpoints/train_center/dila_pointlink_%s' % timestr
+            save_path = 'checkpoints/train_center/0711_0.05w_0.0001_no_sigmoid%s' % timestr
             for k_, v_ in kwargs.items():
                 save_path += '_%s' % v_
 

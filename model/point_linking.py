@@ -65,7 +65,7 @@ class Fourbranch(nn.Module):
         y[:, :, :, 1: 21] = F.softmax(x[:, :, :, 1: 21].contiguous(), dim=3)
         #print("===== y[0, 0, 0, 1: 21] =====")
         #print(y[0, 0, 0, 1: 21])
-        y[:, :, :, 21: 23] = t.sigmoid(x[:, :, :, 21: 23].contiguous())
+        y[:, :, :, 21: 23] = x[:, :, :, 21: 23]
         y[:, :, :, 23: 37] = F.softmax(x[:, :, :, 23: 37].contiguous(), dim=3)
         y[:, :, :, 37: 51] = F.softmax(x[:, :, :, 37: 51].contiguous(), dim=3)
         return y
@@ -156,6 +156,77 @@ class Point_Linking(nn.Module):
                     else:
                         loss_center += net_result[i_x, i_y, 2, 0] ** 2
         print(loss_center)
+
+    def predict_center_offset_and_exist(self, imgs, sizes=None, visualize=False):
+        bboxes = list()
+        labels = list()
+        scores = list()
+        
+        self.eval()
+        if visualize:
+            self.use_preset('visualize')
+            prepared_imgs = list()
+            sizes = list()
+            for img in imgs:
+                size = img.shape[1:]
+                img = preprocess(at.tonumpy(img))
+                prepared_imgs.append(img)
+                sizes.append(size)
+        else:
+             prepared_imgs = list()
+             for img in imgs:
+                 prepared_imgs.append(img.numpy())
+        #link_mnst = t.zeros(self.grid_size**4*self.classes)
+        direction = 0
+        results = list()
+        results_score = list()
+        for img, size in zip(prepared_imgs, sizes):
+            bboxes_ = list()
+            labels_ = list()
+            scores_ = list()
+            '''print("img.shape", img.shape)
+            print("size", size)
+            scale = img.shape[3] / size[1]    #fit to raw image
+            print("scale", scale)
+            print("img.shape[3], size[1]", img.shape[3], size[1]) '''
+            four_out = self(t.from_numpy(img).unsqueeze(0).cuda().float())
+            for i in range(self.B):
+                out_c = four_out[direction]#.reshape([self.grid_size,self.grid_size, 2 * self.B, 51])
+                for b in range(self.grid_size):
+                    for a in range(self.grid_size):
+                        for c in range(self.classes):
+                            p_ab = out_c[a, b, i+self.B, 0]
+                            a_ = out_c[a, b, i+self.B, 21]
+                            b_ = out_c[a, b, i+self.B, 22]
+                            score = p_ab
+                            if score > 0.4:
+                                results.append([a + a_, b + b_, c, score])
+                                results_score.append(score)
+                
+            if len(results_score) > 0:
+                print("have detect:", len(results_score))
+                max_score_index = np.argpartition(results_score, 5)
+                print(max_score_index[-5:])
+                
+                rs = np.array([results[i] for i in max_score_index[-5:]])
+                for p in rs: 
+                    #bbox = [p[0], p[1], 2*p[2]-p[0], 2*p[3] - p[1]]
+                    #(y_{min}, x_{min}, y_{max}, x_{max})
+                    bbox = [p[1], p[0], p[1]+1, p[0]+1]
+                    #print(bbox)
+                    bbox = [b * 32 for b in bbox] 
+                    bboxes_.append(bbox)
+                    labels_.append(p[2])
+                    scores_.append(p[3]*1000)  #result of a img
+            #bboxes_nms = self._suppress(bboxes_, scores_)
+            bboxes.append(np.array(bboxes_))
+            labels.append(np.array(labels_))
+            scores.append(np.array(scores_))
+
+        self.use_preset('evaluate')
+        self.train()
+        return bboxes, labels, scores
+
 
     def predict_center_exist(self, imgs, sizes=None, visualize=False):
         bboxes = list()
